@@ -153,7 +153,7 @@
         <!-- <q-btn v-show="packings.length > 0" @click="confirmOrder" :label="`Confirmar ${packings.length} Palets`"  style="color:white; background-color: green; float: right;"/> -->
         <!-- <div v-show="!showForm" style="height: 72px;"></div> -->
         <!-- the class is the index of the array -->
-        <q-card style="margin: 10px 0px 10px 0px;" v-for="(barcode, index) in barcodes_readed" :key="index" @click="selectBarcode(barcode)" >
+        <q-card style="margin: 10px 0px 10px 0px;" v-for="(barcode, index) in barcodes_readed" :key="index" @click="selectBarcode(barcode)" v-if="barcodes_readed.length > 0 && !scanning">
             <q-card-section>
                 <q-item>
                     <q-item-section>
@@ -444,7 +444,9 @@
                 });
                 Quagga.stop();
                 this.scanning = false;
+                this.barcodes_readed = [];
                 this.selected_barcode = null;
+                this.scanning = false;
             },
             scanBarcode() {
                 console.log('Scanning ' + this.selected_palet)
