@@ -25,14 +25,15 @@
         <div v-show="new_order" class="overlay"></div>
         <!-- <q-btn @click="showForm = true; scanning=false; new_order = !new_order; ofDialog()" label="NUEVO PALET"  />  -->
         <!-- <q-btn @click="scanBarcode" label="Escanear Código de Barras" style="margin: 0px 10px 0px 10px;" /> -->
-        <div v-show="!scanning" style="display: flex; justify-content: center; padding-top: 10px;">
-            <!-- <q-label for="selected_of" style="margin: 0px 10px 0px 10px;">Selecciona una orden de fabricación</q-label> -->
+        <div v-show="!scanning" style="display: flex; justify-content: center; align-items: center; padding-top: 10px;">
+            <!-- <q-label for="selected_of.name" style="margin: 0px 10px 0px 10px;">Selecciona una orden de fabricación</q-label> -->
             <!-- OFS format: [
                 "of1",
                 "of2"
                 ]
                 -->
-            <multiselect v-model="value"  :options="ofs" placeholder="Selecciona una OF" label="name" track-by="name"></multiselect>
+                  
+            <multiselect v-model="selected_of" :options="ofs" placeholder="Selecciona una OF" label="name" track-by="name" style="width:200px"></multiselect>
         </div>
         <br>
         <div style="display: flex; justify-content: center;">
@@ -244,6 +245,8 @@
 </template>
 <script>
     const regex = /^\d+-\d+-\d+-\d+$/;
+    import 'vue-multiselect/dist/vue-multiselect.css';
+    // import 'vue-multiselect/dist/vue-multiselect.min.css'
     import Multiselect from 'vue-multiselect'
     import $ from 'jquery';  
     import Quagga from 'quagga';
@@ -261,7 +264,12 @@
 
    
     export default {
+        components: {
+            ProductComponent,
+            Multiselect
+        },
         data() {
+            
             return {
                 showForm: false,
                 scanning: false,
@@ -278,7 +286,7 @@
                 selection: [],
                 new_order: false,
                 ofs: [],
-                selected_of: 'of1',
+                selected_of: {},
                 mostrarDialogoOf: false,
                 selected_palet: null,
                 palet_selection: [],
@@ -355,7 +363,7 @@
             ofDialog() {
                 // let selected_of = document.getElementById('selected_of');
                 // console.log(selected_of.span);
-                if (this.selected_of == '' || this.selected_of == undefined || this.selected_of == null) {
+                if (this.selected_of.name == '' || this.selected_of.name == undefined || this.selected_of.name == null) {
                     this.mostrarDialogoOf = true;
                 } else {
                     this.mostrarDialogoOf = false;
@@ -364,13 +372,13 @@
                 // this.mostrarDialogoOf = true;
             },
             nuevoPalet() {
-                if (this.selected_of == '' || this.selected_of == undefined || this.selected_of == null) {
+                if (this.selected_of.name == '' || this.selected_of.name == undefined || this.selected_of.name == null) {
                     return;
                 } 
                 // añadir un nuevo packing 
                 let new_palet = {
                     name: '',
-                    of_group: this.selected_of,
+                    of_group: this.selected_of.name,
                     products: [],
                     id: this.packings.length
                 };
@@ -423,7 +431,7 @@
                     // pushear el producto del palet seleccionado
                     // TODO: Review this
                     console.log(this.selected_palet);
-                    if (this.packings[this.selected_palet].of_group !== this.selected_of) {
+                    if (this.packings[this.selected_palet].of_group !== this.selected_of.name) {
                         console.log('El palet seleccionado no pertenece a la OF seleccionada');
                         return;
                     }
@@ -492,10 +500,7 @@
             },
             
         },
-        components: {
-            ProductComponent,
-            Multiselect
-        },
+        
         mounted() {
 
             let search_toolbar = document.getElementById('search-toolbar');
@@ -504,7 +509,16 @@
             fetch('http://192.168.1.159:3001/get-ofs')
             .then(response => response.json())
             .then(data => {
-                this.ofs = data;
+                let result = data.map(of => {
+                    return {
+                        name: of,
+                        value: of
+                    }
+                });
+                
+                this.ofs = result;
+
+                console.log(result);
             });
 
             fetch('http://192.168.1.159:3001/reset-barcodes')
