@@ -138,7 +138,7 @@
                 }"
                 class="grow"
             > 
-                ELIMINAR <b style="font-size: x-large;">1</b> {{ selected_product ? 'PROD' : selected_packing ? 'PALETA' : selected_picking ? 'ORDEN' : '' }}
+                ELIMINAR <b style="font-size: x-large;">1</b> {{ selected_product ? 'PROD.' : selected_packing ? 'PALETA' : selected_picking ? 'ORDEN' : '' }}
             </div>
         </transition>
     </div>
@@ -316,7 +316,7 @@
                         id="search-bar"
                         v-model="searchModel"
                         placeholder="Buscar..."
-                        style="text-align: center; color: white; padding: 10px; border-radius: 20px; border: 1px solid #AC162C; margin-left: 10px; margin-right: 20px;"
+                        style="text-align: center; color: white; padding: 10px; border-radius: 20px; border: 1px solid #AC162C; margin-left: 10px; margin-right: 20px;width: 50px;"
                         />
                     </div>`
                 search_toolbar.innerHTML = html;

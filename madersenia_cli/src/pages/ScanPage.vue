@@ -27,7 +27,12 @@
         <!-- <q-btn @click="scanBarcode" label="Escanear Código de Barras" style="margin: 0px 10px 0px 10px;" /> -->
         <div v-show="!scanning" style="display: flex; justify-content: center; padding-top: 10px;">
             <!-- <q-label for="selected_of" style="margin: 0px 10px 0px 10px;">Selecciona una orden de fabricación</q-label> -->
-            <q-select label="Selecciona una OF" v-model="selected_of" :options="ofs" style="width: 200px;" filled></q-select>
+            <!-- OFS format: [
+                "of1",
+                "of2"
+                ]
+                -->
+            <multiselect v-model="value"  :options="ofs" placeholder="Selecciona una OF" label="name" track-by="name"></multiselect>
         </div>
         <br>
         <div style="display: flex; justify-content: center;">
@@ -239,6 +244,7 @@
 </template>
 <script>
     const regex = /^\d+-\d+-\d+-\d+$/;
+    import Multiselect from 'vue-multiselect'
     import $ from 'jquery';  
     import Quagga from 'quagga';
     import ProductComponent from 'components/ProductComponent.vue';
@@ -487,7 +493,8 @@
             
         },
         components: {
-            ProductComponent
+            ProductComponent,
+            Multiselect
         },
         mounted() {
 
