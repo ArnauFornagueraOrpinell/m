@@ -342,7 +342,7 @@
                     return packing;
                 });
                 // Eliminar palets vacíos
-                this.packings = this.packings.filter(packing => packing.products.length > 0);
+                // this.packings = this.packings.filter(packing => packing.products.length > 0);
                 // Limpia la selección
                 this.selection = [];
             },  
