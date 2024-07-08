@@ -21,6 +21,8 @@
             :readonly="!editable"
           />
         </q-item-section>
+      </q-item>
+      <q-item>
         <q-item-section>
           <q-item-label>Descripción</q-item-label>
           <q-input
@@ -40,6 +42,8 @@
             :readonly="!editable"
           />
         </q-item-section>
+      </q-item>
+      <q-item>
         <q-item-section>
           <q-item-label>Alto</q-item-label>
           <q-input
@@ -60,6 +64,8 @@
             :readonly="!editable"
           />
         </q-item-section>
+      </q-item>
+      <q-item>
         <q-item-section>
           <q-item-label>Material</q-item-label>
           <q-input
@@ -78,6 +84,8 @@
             :readonly="!editable"
           />
         </q-item-section>
+      </q-item>
+      <q-item>
         <q-item-section>
           <q-item-label>Planta</q-item-label>
           <q-input
@@ -100,50 +108,3 @@
     </q-card-section>
   </q-card>
 </template>
-
-<script>
-import { ref, watch } from 'vue';
-
-export default {
-  props: {
-    editable: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    id: {
-      type: Number,
-      required: true
-    },
-    modelValue: {
-      type: Object,
-      required: true
-    }
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    const model = ref(props.modelValue);
-
-    const updateValue = (key) => {
-      if (props.editable) {
-        this.$emit('update:modelValue', { ...model.value, [key]: model.value[key] });
-      }
-    }
-
-    watch(model, () => {
-      if (props.editable) {
-        emit('update:modelValue', model.value);
-      }
-    });
-
-    return {
-      model,
-      updateValue
-    }
-  }
-};
-</script>
-
-<style scoped>
-/* Estilos personalizados aquí si es necesario */
-</style>
