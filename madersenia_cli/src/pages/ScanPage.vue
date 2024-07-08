@@ -430,6 +430,7 @@
                 });
                 Quagga.stop();
                 this.scanning = false;
+                this.selected_barcode = null;
             },
             scanBarcode() {
                 console.log('Scanning ' + this.selected_palet)
