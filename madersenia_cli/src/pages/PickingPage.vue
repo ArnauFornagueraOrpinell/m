@@ -174,7 +174,7 @@
                 console.log('Confirmar orden:', this.pickings);
                 // TODO: guarda los items que tenga en pickings
                 // post to save the pickings
-                fetch('http:// 192.168.1.159:3001/save', {
+                fetch('http://192.168.1.159:3001/save', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -322,7 +322,7 @@
                 search_toolbar.innerHTML = html;
 
 
-                fetch(`http:// 192.168.1.159:3001/page?page=1&length=${page_length}`)
+                fetch(`http://192.168.1.159:3001/page?page=1&length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
                     this.pickings = data;
@@ -330,7 +330,7 @@
                     this.data = data;
                 })
 
-                fetch(`http:// 192.168.1.159:3001/pages?length=${page_length}`)
+                fetch(`http://192.168.1.159:3001/pages?length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
                     console.log("Actual page" + this.actual_page)
@@ -402,7 +402,7 @@
             getPickingsPage(page_number) {
                 this.actual_page = page_number;
                 console.log('Página:', page_number);
-                fetch(`http:// 192.168.1.159:3001/page?page=${page_number}&length=${page_length}`)
+                fetch(`http://192.168.1.159:3001/page?page=${page_number}&length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
                     if ((this.actual_page <= this.total_pages) && (this.actual_page >= 1)) {
