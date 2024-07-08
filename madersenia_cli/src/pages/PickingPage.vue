@@ -114,7 +114,7 @@
                 }"
                 class="grow"
             > 
-                ELIMINAR <b style="font-size: x-large;">1</b> {{ selected_product ? 'PRODUCTO' : selected_packing ? 'PALETA' : selected_picking ? 'ORDEN' : '' }}
+                ELIMINAR <b style="font-size: x-large;">1</b> {{ selected_product ? 'PROD.' : selected_packing ? 'PALETA' : selected_picking ? 'ORDEN' : '' }}
             </div>
         </transition>
         <transition name="delete-slide"
