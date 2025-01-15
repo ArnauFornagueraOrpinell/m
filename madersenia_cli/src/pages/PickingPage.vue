@@ -175,7 +175,7 @@
                 console.log('Confirmar orden:', this.pickings);
                 // TODO: guarda los items que tenga en pickings
                 // post to save the pickings
-                fetch('https://127.0.0.1:3002/save', {
+                fetch('https://192.168.0.197:3002/save', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -324,7 +324,7 @@
                 search_toolbar.innerHTML = html;
 
 
-                // fetch(`https://127.0.0.1:3002/page?page=1&length=${page_length}`)
+                // fetch(`https://192.168.0.197:3002/page?page=1&length=${page_length}`)
                 // .then(response => response.json())
                 // .then(data => {
                 //     this.pickings = data;
@@ -333,7 +333,7 @@
                 //     this.data = data.data
                 // })
 
-                fetch(`https://127.0.0.1:3002/page?length=${page_length}`)
+                fetch(`https://192.168.0.197:3002/page?length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Actual page' + this.actual_page)
@@ -408,7 +408,7 @@
             getPickingsPage(page_number) {
                 this.actual_page = page_number;
                 console.log('Página:', page_number);
-                fetch(`https://127.0.0.1:3002/page?page=${page_number}&length=${page_length}`)
+                fetch(`https://192.168.0.197:3002/page?page=${page_number}&length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
                     this.data = data.data;
@@ -475,7 +475,7 @@
                         }
                     }
                 }
-                fetch('https://127.0.0.1:3002/delete', {
+                fetch('https://192.168.0.197:3002/delete', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

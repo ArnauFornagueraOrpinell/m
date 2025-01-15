@@ -392,10 +392,10 @@
                 this.scanning = false;
 
                 let palets_to_confirm = this.palet_selection.map(palet => this.packings[palet]);
-                // fetch this url 'https://192.168.1.158:3002/add-picking'
+                // fetch this url 'https://192.168.0.197:3002/add-picking'
                 // allow cors in the server
                 console.log(palets_to_confirm);
-                fetch('https://192.168.1.158:3002/add-picking', {
+                fetch('https://192.168.0.197:3002/add-picking', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -423,7 +423,7 @@
                 this.barcodes_readed = this.barcodes_readed.filter(barcode => barcode !== this.selected_barcode);
                 
 
-                fetch('https://192.168.1.158:3002/get-product-by-barcode?barcode=' + this.selected_barcode)
+                fetch('https://192.168.0.197:3002/get-product-by-barcode?barcode=' + this.selected_barcode)
                 .then(response => { 
                     if (!response.ok) { // Verifica si el código de estado no es 2xx
                         throw new Error('Error en la solicitud: ' + response.status);
@@ -511,7 +511,7 @@
             let search_toolbar = document.getElementById('search-toolbar');
             search_toolbar.innerHTML = '';
             // Carga las ofs disponibles
-            fetch('https://192.168.1.158:3002/get-ofs')
+            fetch('https://192.168.0.197:3002/get-ofs')
             .then(response => response.json())
             .then(data => {
                 let result = data.map(of => {
@@ -526,7 +526,7 @@
                 console.log(result);
             });
 
-            fetch('https://192.168.1.158:3002/reset-barcodes')
+            fetch('https://192.168.0.197:3002/reset-barcodes')
             .then(response => response.json())
             .then(data => {
                 console.log(data);
