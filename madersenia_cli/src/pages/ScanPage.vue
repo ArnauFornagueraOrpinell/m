@@ -1,297 +1,233 @@
 <template>
-    <q-page style="margin: 10px;">
-        <q-dialog v-model="mostrarDialogoOf">
-            <q-card>
-                <q-card-section class="row items-center">
-                <q-icon name="warning" color="red" />
-                <span class="q-ml-sm">Selecciona una orden de fabricación antes de continuar</span>
-                </q-card-section>
-                <q-card-actions align="right">
-                <q-btn flat label="Cerrar" color="primary" v-close-popup />
-                </q-card-actions>
-            </q-card>
-        </q-dialog>
-            <q-dialog v-model="mostrarBarcodeAlreadyReaded">
-            <q-card>
-                <q-card-section class="row items-center">
-                <q-icon name="warning" color="red" />
-                <span class="q-ml-sm">El codigo de barras ya se ha leido previamente</span>
-                </q-card-section>
-                <q-card-actions align="right">
-                <q-btn flat label="Cerrar" color="primary" v-close-popup />
-                </q-card-actions>
-            </q-card>
-        </q-dialog>
-        <div v-show="new_order" class="overlay"></div>
-        <!-- <q-btn @click="showForm = true; scanning=false; new_order = !new_order; ofDialog()" label="NUEVO PALET"  />  -->
-        <!-- <q-btn @click="scanBarcode" label="Escanear Código de Barras" style="margin: 0px 10px 0px 10px;" /> -->
-        <div v-show="!scanning" style="display: flex; justify-content: center; align-items: center; padding-top: 10px;">
-            <!-- <q-label for="selected_of.name" style="margin: 0px 10px 0px 10px;">Selecciona una orden de fabricación</q-label> -->
-            <!-- OFS format: [
-                "of1",
-                "of2"
-                ]
-                -->
-                  
-            <multiselect v-model="selected_of" :options="ofs" placeholder="Selecciona una OF" label="name" track-by="name" style="width:200px"></multiselect>
-        </div>
-        <br>
-        <div style="display: flex; justify-content: center;">
-            <q-input v-show="scanning" v-model="selected_barcode" label="Codigo de Barras" style="width: 200px;" filled type="text" />
-        </div>
-        <!--    <video id="webcam_viewport" style="width: 250px; height: 250px;"></video> -->
-        <section v-show="scanning" id="container" class="container">
-            <div v-show="scanning" id="result_strip">
-                <ul class="thumbnails"></ul>
-                <ul class="collector"></ul>
+    <q-page class="q-pa-md">
+      <!-- Diálogos -->
+      <q-dialog v-model="dialogos.mostrarDialogoOf">
+        <q-card>
+          <q-card-section class="row items-center bg-warning text-white">
+            <q-icon name="warning" size="24px" class="q-mr-sm"/>
+            <span>Selecciona una orden de fabricación antes de continuar</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cerrar" color="primary" v-close-popup/>
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+  
+      <q-dialog v-model="dialogos.mostrarBarcodeAlreadyReaded">
+        <q-card>
+          <q-card-section class="row items-center bg-warning text-white">
+            <q-icon name="warning" size="24px" class="q-mr-sm"/>
+            <span>El código de barras ya se ha leído previamente</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cerrar" color="primary" v-close-popup/>
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+  
+      <!-- Overlay para nuevo pedido -->
+      <div v-show="new_order" class="overlay-container">
+        <div class="overlay"></div>
+      </div>
+  
+      <!-- Selector OF -->
+      <div v-show="!scanning" class="of-selector q-mb-md">
+        <multiselect
+          v-model="selected_of"
+          :options="ofs"
+          placeholder="Selecciona una OF"
+          label="name"
+          track-by="name"
+          class="of-multiselect"
+        >
+          <template #option="{ option }">
+            <div class="multiselect-option">
+              <span class="text-weight-medium">OF #{{ option.name }}</span>
             </div>
-            <div v-show="scanning" id="interactive" class="viewport"></div>
-        </section>
+          </template>
+        </multiselect>
+      </div>
+  
+      <!-- Scanner Input -->
+      <div v-show="scanning" class="scanner-container q-mb-lg">
+        <q-input
+          v-model="selected_barcode"
+          label="Código de Barras"
+          filled
+          class="scanner-input"
+          bottom-slots
+        >
+          <template v-slot:append>
+            <q-icon name="photo_camera" />
+          </template>
+        </q-input>
         
-        <div v-show="!scanning" style="margin-top: 10px;" >
-            <q-card  class="kanban-card" style="margin: 10px 0px 10px 0px; height:70px; background-color: #AC162C; cursor: pointer;" @click="ofDialog(); nuevoPalet();">
-                <q-card-section >
-                    <q-item>
-                        <q-item-section style="display: flex; justify-content: center; align-items: center;">
-                            <!-- pon uno al lado del otro  -->
-                            <p style="color: white; margin: 0 10px 0 0; font-size: larger;" >NUEVO PALET</p>
-
-                            
-                        </q-item-section>
-                    </q-item>
-                    <q-item>
-                        
-                    <!-- <q-card v-show="new_order" styçle="width: 40%; margin: 0 auto;"></q-card> -->
-
-                    </q-item>
-                </q-card-section>
-                
-            </q-card>
-            <transition
-                    name="fade"
-                    enter-active-class="animated fadeIn "
-                    leave-active-class="animated fadeOut "
-                >
-                <q-card>
-                    <q-card-section v-show="new_order" style="max-width: 400px; margin: 0 auto;" class="overlay">
-                        <div >
-                            <!-- line 1  -->
-                            <div class="input-line">
-                                <q-input v-model="form.PRODUCT_ID" label="ID Producto" type="number"  />
-                                
-                            </div>
-                            <div class="input-line">
-                                <q-input v-model="form.CODI_PRODUCTE" label="Nombre"  />
-
-                                <q-input v-model="form.NUM_DOCUMENT_OF" label="OF" type="number"  />
-                            </div>
-                            <div class="input-line">
-                                <q-input v-model="form.CODI_PRODUCTE" label="Referencia de Pieza"  />
-                                <q-input v-model="form.DESCRIPCIO" label="Descripción"  />
-                            </div>
-                            <!-- line 2 -->
-                            <div class="input-line">
-                                <q-input v-model="form.ANCHO" label="Ancho" type="number"/>
-                                <q-input v-model="form.LARGO" label="Alto" type="number"/>
-                                <q-input v-model="form.GRUESO" label="Grosor" type="number"/>
-                                <q-input v-model="form.TIPUS_EMBALATGE" label="Tipus Embalatge"  />
-                
-                            </div>
-                            <!-- line 3 -->
-                            <div class="input-line">
-                                <q-input v-model="form.UBICACIO_1" label="Edificio"  />
-                                <q-input v-model="form.UBICACIO_2" label="Planta"  />
-                                <q-input v-model="form.UBICACIO_3" label="Habitación"  />
-                            </div>
-                            <q-btn label="CREAR" style="margin: 10px 0px 10px 0px;"  />
-                        </div>
-                    </q-card-section>
-                </q-card>
-            </transition>
-    
-        </div>
-        
-        <q-card v-show="!scanning" :id="packing_index" style="margin: 10px 0px 10px 0px;" v-for="(packing, packing_index) in packings" :key="packing_index" @click="togglePalet(packing_index)">
-
-            <q-item>
-                    <q-item-section>
-                        <q-item-label>
-                            <p style="width: 1000px; font-size: large; margin: 10px">{{'PALET #' + (packing_index+1)+'-'+packing.NUM_DOCUMENT_OF.toUpperCase()+ (packing.products.length > 0 ? '-' + packing.products[0].UBICACIO_3.toUpperCase() : '')}}</p>
-                        </q-item-label>
-                    </q-item-section>
-                </q-item>
-            <q-card-section v-show="!scanning" style="margin: 10px" >
-                OF: {{ packing.of_group }}
+        <div id="interactive" class="viewport q-mt-md"></div>
+      </div>
+  
+      <!-- Nuevo Palet Button -->
+      <q-card
+        v-show="!scanning"
+        class="new-palet-card q-mb-lg cursor-pointer"
+        :class="{'disabled': !selected_of.name}"
+        @click="ofDialog(); nuevoPalet();"
+      >
+        <q-card-section class="bg-primary text-white">
+          <div class="row items-center justify-between">
+            <div class="text-h6">NUEVO PALET</div>
+            <q-icon name="add_box" size="24px"/>
+          </div>
+        </q-card-section>
+      </q-card>
+  
+      <!-- Lista de Palets -->
+      <div class="palets-container">
+        <transition-group
+          name="list"
+          enter-active-class="animated fadeIn"
+          leave-active-class="animated fadeOut"
+        >
+          <q-card
+            v-for="(packing, packing_index) in packings"
+            :key="packing_index"
+            class="palet-card q-mb-md"
+            :class="{'selected': palet_selection.includes(packing_index)}"
+            @click="togglePalet(packing_index)"
+          >
+            <q-card-section class="bg-grey-3">
+              <div class="row items-center justify-between">
+                <div class="text-h6">
+                  PALET #{{ packing_index + 1 }}-{{ packing.NUM_DOCUMENT_OF }}
+                  {{ packing.products.length > 0 ? '-' + packing.products[0].UBICACIO_3 : '' }}
+                </div>
+                <q-badge color="primary" class="q-pa-sm">
+                  OF: {{ packing.of_group }}
+                </q-badge>
+              </div>
             </q-card-section>
-            <q-card-section @click.stop v-show="!scanning" >
-                <q-item v-for="(product, product_index) in packing.products" :key="product_index" >
-                    <q-item-section>
-                        <ProductComponent 
-                            @click.stop @click="toggleSelection(product)" 
-                            :id="'#'+product.NUM_DOCUMENT_OF+'-'+product.CODI_PRODUCTE" 
-                            :class="{ 'product-component': true, 'selected': selection.includes(product) }"
-                            v-model="this.packings[packing_index].products[product_index]"
-                        />
-                        
-                    </q-item-section>  
-                      
-                </q-item>
-                <q-card id="index" v-show="selected_palet != null && selected_palet == packing_index" class="kanban-card" style="margin: 10px 0px 10px 0px; height:70px; background-color: #1e90ff ; cursor: pointer; color: white; font-size: larger;" @click="ofDialog(); scanBarcode();">
-                    <q-card-section >
-                        <q-item>
-                            <q-item-section style="display: flex; justify-content: center; align-items: center;">
-                                <q-icon name="add" style="cursor: pointer;" />
-                            </q-item-section>
-                        </q-item>
-                    </q-card-section>
-                </q-card>
-            </q-card-section>
-        </q-card>
-   
-        <h3 v-show="packings.length === 0" style="text-align: center;">No hay pickings</h3>
-
-        <!-- <q-btn v-show="packings.length > 0" @click="confirmOrder" :label="`Confirmar ${packings.length} Palets`"  style="color:white; background-color: green; float: right;"/> -->
-        <!-- <div v-show="!showForm" style="height: 72px;"></div> -->
-        <!-- the class is the index of the array -->
-        <q-card style="margin: 10px 0px 10px 0px;" v-for="(barcode, index) in barcodes_readed" :key="index" @click="selectBarcode(barcode)" >
-            <q-card-section v-if="barcodes_readed.length > 0 && scanning" >
-                <q-item>
-                    <q-item-section>
-                        <q-item-label caption>{{ barcode }}</q-item-label>
-                    </q-item-section>
-                </q-item>
-            </q-card-section>
-        </q-card>
-    
-        <div v-show=" packings.length > 0 && !scanning" style="background-color: green; color: green; position: fixed; bottom: 0; width: 100%; height: 56px;" >
-            <transition 
-                name="confirm-slide1"
-                enter-active-class="animated slideInLeft"
-                leave-active-class="animated faster fadeOut slower slideOutLeft linear"
-                >
+  
+            <q-card-section>
+              <div class="row q-col-gutter-md">
                 <div 
-                    v-if="selection.length > 0 && packings.length > 0"
+                  v-for="(product, product_index) in packing.products"
+                  :key="product_index"
+                  class="col-12 col-md-6"
+                >
+                  <ProductComponent
                     @click.stop
-                    @click="confirmOrder"
-                    :style="{ 
-                        backgroundColor: 'green', 
-                        color: 'white', 
-                        position: 'fixed', 
-                        bottom: '0', 
-                        right: '0', 
-                        width: '50%', 
-                        padding: '10px', 
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        float: 'right',
-                        fontSize: 'large',
-
-                    }"        >
-                    CONFIRMAR: <b style="font-size: x-large;">{{ palet_selection.length }} </b> PALETS
+                    @click="toggleSelection(product)"
+                    :id="'#'+product.NUM_DOCUMENT_OF+'-'+product.CODI_PRODUCTE"
+                    :class="{ 'selected': selection.includes(product) }"
+                    v-model="packings[packing_index].products[product_index]"
+                  />
                 </div>
-            </transition>
-            <transition name="confirm-slide2"
-                enter-active-class="animated fadeIn"
-            >
-                <div v-if="selection.length == 0 && packings.length > 0"
-                    @click="confirmOrder"
-                    :style="{ 
-                    backgroundColor: 'green', 
-                        color: 'white', 
-                        position: 'fixed', 
-                        bottom: '0', 
-                        right: '0', 
-                        width: '100%', 
-                        padding: '10px', 
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        float: 'right',
-                        fontSize: 'large',
-
-                    }"        >
-                    CONFIRMAR: <b style="font-size: x-large;">{{ palet_selection.length }} </b> PALETS
-                </div> 
-            </transition>
-            <transition name="delete-slide"
-                enter-active-class="animated slideInLeft"
-            >
-                <div 
-                    v-if="selection.length > 0" 
-                    @click="deleteOrder" 
-                    :style="{ 
-                        backgroundColor: 'red',
-                        color: 'white', 
-                        position: 'fixed', 
-                        bottom: '0', 
-                        left: '0', 
-                        width: '50%', 
-                        padding: '10px', 
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        float: 'left',
-                        fontSize: 'large',
-                    }"
-                    class="grow"
-                > 
-                    ELIMINAR: <b style="font-size: x-large;">{{ selection.length }} </b> PRODUCTO{{ selection.length > 1 ? 'S' : '' }}
-                </div>
-
-            </transition>
+              </div>
+  
+              <!-- Añadir producto button -->
+              <q-btn
+                v-if="selected_palet === packing_index"
+                color="primary"
+                icon="add"
+                label="Añadir Producto"
+                class="full-width q-mt-md"
+                @click.stop="ofDialog(); scanBarcode();"
+              />
+            </q-card-section>
+          </q-card>
+        </transition-group>
+  
+        <!-- Empty state -->
+        <div v-if="packings.length === 0" class="empty-state text-center q-pa-xl">
+          <q-icon name="inbox" size="48px" color="grey-5"/>
+          <div class="text-h6 text-grey-7 q-mt-sm">No hay palets</div>
         </div>
-        <q-btn v-show="selected_barcode !== null && scanning" @click="confirmBarcode" label="Confirmar " style="color:white; background-color: green; float: right; margin 20px;"/>
-        <div style="margin-bottom: 100px;"></div>
-
-  </q-page>
-</template>
-<script>
-    const regex = /^\d+-\d+-\d+-\d+$/;
-    import 'vue-multiselect/dist/vue-multiselect.css';
-    // import 'vue-multiselect/dist/vue-multiselect.min.css'
-    import Multiselect from 'vue-multiselect'
-    import $ from 'jquery';  
-    import Quagga from 'quagga';
-    import ProductComponent from 'components/ProductComponent.vue';
-    
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-    window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-    // function getUserMedia(constraints, success, failure) {
-    //     navigator.getUserMedia(constraints, function(stream) {
-    //         var videoSrc = (window.URL && window.URL.createObjectURL(stream)) || stream;
-    //         success.apply(null, [videoSrc]);
-    //     }, failure);
-    // }
-
-
-   
-    export default {
+      </div>
+  
+      <!-- Barra de acciones flotante -->
+      <q-page-sticky position="bottom" expand class="action-bar" v-show="packings.length > 0 && !scanning">
+        <div class="row full-width">
+          <!-- Botón eliminar -->
+          <transition
+            enter-active-class="animated slideInLeft"
+            leave-active-class="animated slideOutLeft"
+          >
+            <q-btn
+              v-if="selection.length > 0"
+              color="negative"
+              class="col-6"
+              @click="deleteOrder"
+            >
+              <div class="text-center">
+                ELIMINAR: <b>{{ selection.length }}</b> 
+                PRODUCTO{{ selection.length > 1 ? 'S' : '' }}
+              </div>
+            </q-btn>
+          </transition>
+  
+          <!-- Botón confirmar -->
+          <q-btn
+            color="positive"
+            :class="selection.length > 0 ? 'col-6' : 'col-12'"
+            @click="confirmOrder"
+          >
+            <div class="text-center">
+              CONFIRMAR: <b>{{ palet_selection.length }}</b> PALETS
+            </div>
+          </q-btn>
+        </div>
+      </q-page-sticky>
+  
+      <!-- Botón confirmar código de barras -->
+      <q-page-sticky
+        v-show="selected_barcode !== null && scanning"
+        position="bottom-right"
+        :offset="[18, 18]"
+      >
+        <q-btn
+          color="positive"
+          icon="check"
+          label="Confirmar"
+          @click="confirmBarcode"
+        />
+      </q-page-sticky>
+    </q-page>
+  </template>
+  
+  <script>
+  import { ref, reactive } from 'vue'
+  import Multiselect from 'vue-multiselect'
+  import Quagga from 'quagga'
+  import ProductComponent from 'components/ProductComponent.vue'
+  
+  const regex = /^\d+-\d+-\d+-\d+$/
+  
+  export default {
+        name: 'PaletManagementPage',
+        
         components: {
-            ProductComponent,
-            Multiselect
+        ProductComponent,
+        Multiselect
         },
-        data() {
-            
-            return {
-                showForm: false,
-                scanning: false,
-                // Array de pickings
-                packings: [],
-                form: {
-                    product_id: null,
-                    name: '',
-                    ref_piece: '',
-                },
-                barcodes_readed: [],
-                barcodes_printed: [],
-                selected_barcode: null,
-                selection: [],
-                new_order: false,
-                ofs: [],
-                selected_of: {},
-                mostrarDialogoOf: false,
-                selected_palet: null,
-                palet_selection: [],
-                mostrarBarcodeAlreadyReaded: false,
-            }
+    
+        setup() {
+        const dialogos = reactive({
+            mostrarDialogoOf: false,
+            mostrarBarcodeAlreadyReaded: false
+        })
+    
+        return {
+            dialogos,
+            scanning: ref(false),
+            packings: ref([]),
+            barcodes_readed: ref([]),
+            selected_barcode: ref(null),
+            selection: ref([]),
+            new_order: ref(false),
+            ofs: ref([]),
+            selected_of: ref({}),
+            selected_palet: ref(null),
+            palet_selection: ref([])
+        }
         },
         methods: {
             togglePalet(palet_index) {
@@ -695,291 +631,93 @@
     
 </script>
 
-<style>
-    .input-line {
-        display: flex;
-        justify-content: space-between;
+<style lang="scss">
+.of-selector {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.new-palet-card {
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+  
+  &.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.palet-card {
+  transition: all 0.2s ease;
+  
+  &.selected {
+    border: 2px solid var(--q-primary);
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+}
+
+.scanner-container {
+  max-width: 600px;
+  margin: 0 auto;
+  
+  .scanner-input {
+    max-width: 300px;
+    margin: 0 auto;
+  }
+}
+
+.viewport {
+  max-width: 100%;
+  height: 300px;
+  margin: 0 auto;
+  background: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+  
+  canvas, video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.action-bar {
+  .q-btn {
+    height: 60px;
+    font-size: 1.1em;
+  }
+}
+
+.overlay-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .scanner-container {
+    .viewport {
+      height: 250px;
     }
-    #container {
-    width: 640px;
-    margin: 20px auto;
-    padding: 10px;
+  }
+  
+  .action-bar {
+    .q-btn {
+      height: 50px;
+      font-size: 1em;
     }
-
-    #interactive.viewport {
-    width: 640px;
-    height: 480px;
-    }
-
-
-    #interactive.viewport canvas, video {
-    float: left;
-    width: 640px;
-    height: 480px;
-    }
-
-    #interactive.viewport canvas.drawingBuffer, video.drawingBuffer {
-    margin-left: -640px;
-    }
-
-    .controls fieldset {
-    border: none;
-    margin: 0;
-    padding: 0;
-    }
-
-    .controls .input-group {
-    float: left;
-    }
-
-    .controls .input-group input, .controls .input-group button {
-    display: block;
-    }
-
-    .controls .reader-config-group {
-    float: right;
-    }
-
-    .controls .reader-config-group label {
-    display: block;
-    }
-
-    .controls .reader-config-group label span {
-    width: 9rem;
-    display: inline-block;
-    text-align: right;
-    }
-
-    .controls:after {
-    content: '';
-    display: block;
-    clear: both;
-    }
-
-
-    #result_strip {
-    margin: 10px 0;
-    border-top: 1px solid #EEE;
-    border-bottom: 1px solid #EEE;
-    padding: 10px 0;
-    }
-
-    #result_strip > ul {
-    padding: 0;
-    margin: 0;
-    list-style-type: none;
-    width: auto;
-    overflow-x: auto;
-    overflow-y: hidden;
-    white-space: nowrap;
-    }
-
-    #result_strip > ul > li {
-    display: inline-block;
-    vertical-align: middle;
-    width: 160px;
-    }
-
-    #result_strip > ul > li .thumbnail {
-    padding: 5px;
-    margin: 4px;
-    border: 1px dashed #CCC;
-    }
-
-    #result_strip > ul > li .thumbnail img {
-    max-width: 140px;
-    }
-
-    #result_strip > ul > li .thumbnail .caption {
-    white-space: normal;
-    }
-
-    #result_strip > ul > li .thumbnail .caption h4 {
-    text-align: center;
-    word-wrap: break-word;
-    height: 40px;
-    margin: 0px;
-    }
-
-    #result_strip > ul:after {
-    content: '';
-    display: table;
-    clear: both;
-    }
-
-
-    .scanner-overlay {
-    display: none;
-    width: 640px;
-    height: 510px;
-    position: absolute;
-    padding: 20px;
-    top: 50%;
-    margin-top: -275px;
-    left: 50%;
-    margin-left: -340px;
-    background-color: #FFF;
-    -moz-box-shadow: #333333 0px 4px 10px;
-    -webkit-box-shadow: #333333 0px 4px 10px;
-    box-shadow: #333333 0px 4px 10px;
-    }
-
-    .scanner-overlay > .header {
-    position: relative;
-    margin-bottom: 14px;
-    }
-
-    .scanner-overlay > .header h4, .scanner-overlay > .header .close {
-    line-height: 16px;
-    }
-
-    .scanner-overlay > .header h4 {
-    margin: 0px;
-    padding: 0px;
-    }
-
-    .scanner-overlay > .header .close {
-    position: absolute;
-    right: 0px;
-    top: 0px;
-    height: 16px;
-    width: 16px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 14px;
-    cursor: pointer;
-    }
-
-
-    i.icon-24-scan {
-    width: 24px;
-    height: 24px;
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6QzFFMjMzNTBFNjcwMTFFMkIzMERGOUMzMzEzM0E1QUMiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6QzFFMjMzNTFFNjcwMTFFMkIzMERGOUMzMzEzM0E1QUMiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpDMUUyMzM0RUU2NzAxMUUyQjMwREY5QzMzMTMzQTVBQyIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpDMUUyMzM0RkU2NzAxMUUyQjMwREY5QzMzMTMzQTVBQyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PtQr90wAAAUuSURBVHjanFVLbFRVGP7ua97T9DGPthbamAYYBNSMVbBpjCliWWGIEBMWsnDJxkh8RDeEDW5MDGticMmGBWnSlRSCwgLFNkqmmrRIqzjTznTazkxn5s7c6/efzm0G0Jhwkj/nP+d/nv91tIWFBTQaDQWapkGW67p4ltUub5qmAi0UCqF/a/U2m81tpmddotwwDGSz2dzi4uKSaOucnJycGhsbe1XXdQiIIcdxEAgEtgXq9brySHCht79UXi/8QheawN27d385fPjwuEl6XyKR6LdtW7t06RLK5TKOHj2K/fv3Q87Dw8OYn5/HiRMnMDs7i5mZGQwODiqlPp8PuVwO6XRaOXb16lXl1OnTp5FMJvtosF8M+MWLarWqGJaWlpBKpRRcu3YN4+PjmJ6exsTEhDJw5coVjI6OKgPhcBiZTAbxeBx+vx+XL19Gd3c3Tp48Ka9zqDYgBlTQxYNgMIhIJKLCILkQb+TZsgvdsiyFi+feWRR7oRNZyanQtvW2V4DEUUBiK2eJpeDirSyhCe7F2QPh8fiEp72i9PbsC5G52DbiKZA771yr1dTuGfJ4PQNPFoAyQNR1aNEmsS5eyB3PgjeooMZd2AWvNmzYci/Gea7TeFOcI93jV/K67noGmi4vdRI9gPSDeMLSdKUBZZczlWm1rTtHjLZ24d+WER2tc8N1m+Y+ID74wx0zGYvhg9UNrJdtHJyZRdQfwPsrq9g99xsGlgsYmr6BNzO/IVwsYfjBQ6XYz6JI/72MV366B5/lw0elOkJWGUM3bmKtWjXSLuLaBWhnPnnp0FfoiFi4+TMfVAb2poBkDLjO845uYLEAjL4ALGWBP5YAOsP4AJYBFDaB1HOSVWD2PuV95H2RdV93Lv74/cf6p6Zxq/h6OofeOPJBC39JtONdwOAAViOs4p4OFGTf0Uc8iiyrr9YdQrUnDLsngrVOC0jQib44HlF2RafRZBz1Qy+vfhgK3NJZBlrm+LEm9qWwzFgLU7Ozg0JxZP06jQSRpQ7EerAWDSt6PuhHPmChEAog56fCLvJT5hHTm3OZkz3DyLx7XNWTGEA1GkV14gjWgwbW0ESVjYRwCOuai03L5E7OUBAV4kXSS4auoGIaKOma4m8EA5R1sMEGLh95C+XuLph0WJWpxepYYLtfT0RRgY1KgNODY6BoaChRuEhDCIZQYseuki5KN6hcQHiq7OZNv4/Zq2O6P4Lfkwn46vZjjaYZrIpvWbpzjLErrc4xUGE4avRedpYJalRcIl5hQius/SrPm9xrNOQYJhao6BvNUeWqtY8KaWuNjHOFAr7mM9f4NA4UbKysoUJ8PV9UzVOx6wxDDWUOxnK1pmCD07fOMAvtIsM3l89Dl3HRGhVma9AZMqjOnz2LQqWCxs6dqr3T7x1DTzKJaG8SekcHhg4cgI/56uKdlKnBV/WndqN3YAB/7tyBd3oT6GBIOzs7kc/nDfFdDFT5bS73cp06dQoaPa/Rw/rtO/resTHxxE2m9rCrbSR27UJCcMf1BpiA5rAAGgdfc868fUR1sMwj0cm9Iu9IctweisViB3hhKTHDcHc5jv/LspbyaZrR1OD82/fIlOkuB9LnEWRmDX2TsddUPg3D5gvuc0je0rZaD5EW6G3yjS+A3eeBEWq3XW/Abw1HhUspXADufQb86oW7tZytkYCN//3hHwBvDALPi8EnSOYK8DAOfCc2h4aGcO7cuafkzampqf9UripH12/DtOZbx8ciVGzYy5OO40o25ascGRl5Ssc/AgwAjW3JwqIUjSYAAAAASUVORK5CYII=');
-    display: inline-block;
-    background-repeat: no-repeat;
-    line-height: 24px;
-    margin-top: 1px;
-    vertical-align: text-top;
-    }
-
-    @media (max-width: 603px) {
-
-    #container {
-        width: 300px;
-        margin: 10px auto;
-        -moz-box-shadow: none;
-        -webkit-box-shadow: none;
-        box-shadow: none;
-    }
-
-    #container form.voucher-form input.voucher-code {
-        width: 180px;
-    }
-    }
-    @media (max-width: 603px) {
-
-    .reader-config-group {
-        width: 100%;
-    }
-
-    .reader-config-group label > span {
-        width: 50%;
-    }
-
-    .reader-config-group label > select, .reader-config-group label > input {
-        max-width: calc(50% - 2px);
-    }
-
-    #interactive.viewport {
-        width: 300px;
-        height: 300px;
-        overflow: hidden;
-    }
-
-
-    #interactive.viewport canvas, video {
-        margin-top: -50px;
-        width: 300px;
-        height: 400px;
-    }
-
-    #interactive.viewport canvas.drawingBuffer, video.drawingBuffer {
-        margin-left: -300px;
-    }
-
-
-    #result_strip {
-        margin-top: 5px;
-        padding-top: 5px;
-    }
-
-    #result_strip ul.thumbnails > li {
-        width: 150px;
-    }
-
-    #result_strip ul.thumbnails > li .thumbnail .imgWrapper {
-        width: 130px;
-        height: 130px;
-        overflow: hidden;
-    }
-
-    #result_strip ul.thumbnails > li .thumbnail .imgWrapper img {
-        margin-top: -25px;
-        width: 130px;
-        height: 180px;
-    }
-    }
-    @media (max-width: 603px) {
-
-    .overlay.scanner {
-        width: 640px;
-        height: 510px;
-        padding: 20px;
-        margin-top: -275px;
-        margin-left: -340px;
-        background-color: #FFF;
-        -moz-box-shadow: none;
-        -webkit-box-shadow: none;
-        box-shadow: none;
-    }
-
-    .overlay.scanner > .header {
-        margin-bottom: 14px;
-    }
-
-    .overlay.scanner > .header h4, .overlay.scanner > .header .close {
-        line-height: 16px;
-    }
-
-    .overlay.scanner > .header .close {
-        height: 16px;
-        width: 16px;
-    }
-    }
-
-    .product-component {
-        box-sizing: border-box;
-        border: 2px solid transparent; /* Borde inicial transparente */
-    }
-
-    .product-component.selected {
-        border: 2px solid #AC162C; /* Borde visible cuando está seleccionado */
-    }
-
-    /* animetion for delete slide, grows from the left to the right in */
-    .delete-slide-enter-active, .delete-slide-leave-active {
-        transition: margin-left 1s;
-    }
-    .delete-slide-leave-to  /* .delete-slide-leave-active in <2.1.8 */ {
-        margin-left: -100%;
-        transform: translateX(-20%);
-
-    }
-
-    .confirm-slide1-enter-active, .confirm-slide1-leave-active {
-        transition: margin-right 1s;
-    }
-
-    
+  }
+}
 </style>
-
