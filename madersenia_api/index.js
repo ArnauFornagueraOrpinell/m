@@ -593,7 +593,10 @@ app.get('/get-ofs', (req, res) => {
     conn = ibmdb.openSync(connStr);
     console.log("Connected to: " + DATABASE);
 
-    let query = `SELECT DISTINCT NUM_DOC_OF FROM ${VIEW_NAME}`; //${TAB_SCHEMA}.${TAB_BARCODE_NAME}`;
+    let query = `
+    SELECT DISTINCT NUM_DOCUMENT_OF 
+    FROM ${VIEW_NAME.toUpperCase()}
+    ORDER BY NUM_DOCUMENT_OF`; //${TAB_SCHEMA}.${TAB_BARCODE_NAME}`;
 
     const data = conn.querySync(query);
     console.log("Data in view:", data);
