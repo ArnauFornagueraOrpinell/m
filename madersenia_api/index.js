@@ -549,17 +549,28 @@ app.get('/get-columns', (req, res) => {
     conn = ibmdb.openSync(connStr);
     console.log("Connected to: " + DATABASE);
 
+    // Primero verificamos la vista
+    let checkQuery = `
+      SELECT TABSCHEMA, TABNAME 
+      FROM SYSCAT.TABLES 
+      WHERE TYPE = 'V' 
+      AND UPPER(TABSCHEMA) = UPPER('emp1')`;
+    
+    const tables = conn.querySync(checkQuery);
+    console.log("Available views:", tables);
+
+    // Luego intentamos obtener las columnas
     let query = `
       SELECT COLNAME 
       FROM SYSCAT.COLUMNS 
-      WHERE TABSCHEMA = 'emp1' 
-      AND TABNAME = 'vgesco_query_etq_tal3'
+      WHERE UPPER(TABSCHEMA) = UPPER('emp1') 
+      AND UPPER(TABNAME) = UPPER('vgesco_query_etq_tal3')
       ORDER BY COLNO`;
 
     const data = conn.querySync(query);
     console.log("Columns in view:", data);
 
-    res.status(200).json(data);
+    res.status(200).json({ tables, columns: data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   } finally {
