@@ -542,6 +542,38 @@ app.get('/get-product-by-barcode', (req, res) => {
   }
 });
 
+app.get('/get-columns', (req, res) => {
+  let conn;
+  try {
+    console.log("Attempting to connect: " + connStr);
+    conn = ibmdb.openSync(connStr);
+    console.log("Connected to: " + DATABASE);
+
+    let query = `
+      SELECT COLNAME 
+      FROM SYSCAT.COLUMNS 
+      WHERE TABSCHEMA = 'emp1' 
+      AND TABNAME = 'vgesco_query_etq_tal3'
+      ORDER BY COLNO`;
+
+    const data = conn.querySync(query);
+    console.log("Columns in view:", data);
+
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (conn) {
+      try {
+        conn.closeSync();
+        console.log("Connection closed");
+      } catch (err) {
+        console.log("Error closing connection:", err);
+      }
+    }
+  }
+});
+
 // OK
 app.get('/get-ofs', (req, res) => {
   let conn;
