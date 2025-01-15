@@ -524,7 +524,11 @@ app.get('/get-product-by-barcode', (req, res) => {
     const barcode = req.query.barcode;
     console.log("Barcode:", barcode);
 
-    let query = `SELECT * FROM ${TAB_SCHEMA}.${VIEW_NAME} WHERE barcode = ?`;
+    let query = `
+      SELECT * 
+      FROM ${VIEW_NAME.toUpperCase()}
+      WHERE CODI_PRODUCTE = ?`;
+    
     const data = conn.querySync(query, [barcode]);
     console.log("Data in view:", data);
 
