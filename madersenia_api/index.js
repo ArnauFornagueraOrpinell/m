@@ -10,6 +10,7 @@ const app = express()
 const ibmdb = require('ibm_db');
 require('dotenv').config();
 const querystring = require('querystring');
+const { reject } = require('bluebird');
 
 app.use(cors());
 app.use(express.json());
@@ -18,7 +19,7 @@ app.use(express.json());
 // Configuración para HTTPS
 const privateKey = fs.readFileSync('/app/server.key', 'utf8');
 const certificate = fs.readFileSync('/app/server.crt', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
+const credentials = { key: privateKey, cert: certificate, rejectUnauthorized: false };
 const httpsServer = https.createServer(credentials, app);
 
 
