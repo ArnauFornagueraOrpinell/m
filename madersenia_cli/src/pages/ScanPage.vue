@@ -83,7 +83,7 @@
                             <div class="input-line">
                                 <q-input v-model="form.CODI_PRODUCTE" label="Nombre"  />
 
-                                <q-input v-model="form.NUM_DOC_OF" label="OF" type="number"  />
+                                <q-input v-model="form.NUM_DOCUMENT_OF" label="OF" type="number"  />
                             </div>
                             <div class="input-line">
                                 <q-input v-model="form.CODI_PRODUCTE" label="Referencia de Pieza"  />
@@ -116,7 +116,7 @@
             <q-item>
                     <q-item-section>
                         <q-item-label>
-                            <p style="width: 1000px; font-size: large; margin: 10px">{{'PALET #' + (packing_index+1)+'-'+packing.NUM_DOC_OF.toUpperCase()+ (packing.products.length > 0 ? '-' + packing.products[0].UBICACIO_3.toUpperCase() : '')}}</p>
+                            <p style="width: 1000px; font-size: large; margin: 10px">{{'PALET #' + (packing_index+1)+'-'+packing.NUM_DOCUMENT_OF.toUpperCase()+ (packing.products.length > 0 ? '-' + packing.products[0].UBICACIO_3.toUpperCase() : '')}}</p>
                         </q-item-label>
                     </q-item-section>
                 </q-item>
@@ -128,7 +128,7 @@
                     <q-item-section>
                         <ProductComponent 
                             @click.stop @click="toggleSelection(product)" 
-                            :id="'#'+product.NUM_DOC_OF+'-'+product.CODI_PRODUCTE" 
+                            :id="'#'+product.NUM_DOCUMENT_OF+'-'+product.CODI_PRODUCTE" 
                             :class="{ 'product-component': true, 'selected': selection.includes(product) }"
                             v-model="this.packings[packing_index].products[product_index]"
                         />
@@ -516,8 +516,8 @@
             .then(data => {
                 let result = data.map(of => {
                     return {
-                        name: of['NUM_DOC_OF'],
-                        value: of['NUM_DOC_OF']
+                        name: of['NUM_DOCUMENT_OF'],
+                        value: of['NUM_DOCUMENT_OF']
                     }
                 });
                 
