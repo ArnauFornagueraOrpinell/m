@@ -77,31 +77,31 @@
                         <div >
                             <!-- line 1  -->
                             <div class="input-line">
-                                <q-input v-model="form.product_id" label="ID Producto" type="number"  />
+                                <q-input v-model="form.PRODUCT_ID" label="ID Producto" type="number"  />
                                 
                             </div>
                             <div class="input-line">
-                                <q-input v-model="form.name" label="Nombre"  />
+                                <q-input v-model="form.CODI_PRODUCTE" label="Nombre"  />
 
-                                <q-input v-model="form.of" label="OF" type="number"  />
+                                <q-input v-model="form.NUM_DOC_OF" label="OF" type="number"  />
                             </div>
                             <div class="input-line">
-                                <q-input v-model="form.ref_piece" label="Referencia de Pieza"  />
-                                <q-input v-model="form.description" label="Descripción"  />
+                                <q-input v-model="form.CODI_PRODUCTE" label="Referencia de Pieza"  />
+                                <q-input v-model="form.DESCRIPCIO" label="Descripción"  />
                             </div>
                             <!-- line 2 -->
                             <div class="input-line">
-                                <q-input v-model="form.width" label="Ancho" type="number"/>
-                                <q-input v-model="form.height" label="Alto" type="number"/>
-                                <q-input v-model="form.thick" label="Grosor" type="number"/>
-                                <q-input v-model="form.raw_material" label="Material"  />
+                                <q-input v-model="form.ANCHO" label="Ancho" type="number"/>
+                                <q-input v-model="form.LARGO" label="Alto" type="number"/>
+                                <q-input v-model="form.GRUESO" label="Grosor" type="number"/>
+                                <q-input v-model="form.TIPUS_EMBALATGE" label="Tipus Embalatge"  />
                 
                             </div>
                             <!-- line 3 -->
                             <div class="input-line">
-                                <q-input v-model="form.building" label="Edificio"  />
-                                <q-input v-model="form.plant" label="Planta"  />
-                                <q-input v-model="form.room" label="Habitación"  />
+                                <q-input v-model="form.UBICACIO_1" label="Edificio"  />
+                                <q-input v-model="form.UBICACIO_2" label="Planta"  />
+                                <q-input v-model="form.UBICACIO_3" label="Habitación"  />
                             </div>
                             <q-btn label="CREAR" style="margin: 10px 0px 10px 0px;"  />
                         </div>
@@ -116,7 +116,7 @@
             <q-item>
                     <q-item-section>
                         <q-item-label>
-                            <p style="width: 1000px; font-size: large; margin: 10px">{{'PALET #' + (packing_index+1)+'-'+packing.of_group.toUpperCase()+ (packing.products.length > 0 ? '-' + packing.products[0].plant.toUpperCase() : '')}}</p>
+                            <p style="width: 1000px; font-size: large; margin: 10px">{{'PALET #' + (packing_index+1)+'-'+packing.NUM_DOC_OF.toUpperCase()+ (packing.products.length > 0 ? '-' + packing.products[0].UBICACIO_3.toUpperCase() : '')}}</p>
                         </q-item-label>
                     </q-item-section>
                 </q-item>
@@ -128,7 +128,7 @@
                     <q-item-section>
                         <ProductComponent 
                             @click.stop @click="toggleSelection(product)" 
-                            :id="'#'+product.of+'-'+product.name" 
+                            :id="'#'+product.NUM_DOC_OF+'-'+product.CODI_PRODUCTE" 
                             :class="{ 'product-component': true, 'selected': selection.includes(product) }"
                             v-model="this.packings[packing_index].products[product_index]"
                         />
@@ -153,8 +153,8 @@
         <!-- <q-btn v-show="packings.length > 0" @click="confirmOrder" :label="`Confirmar ${packings.length} Palets`"  style="color:white; background-color: green; float: right;"/> -->
         <!-- <div v-show="!showForm" style="height: 72px;"></div> -->
         <!-- the class is the index of the array -->
-        <q-card style="margin: 10px 0px 10px 0px;" v-for="(barcode, index) in barcodes_readed" :key="index" @click="selectBarcode(barcode)" v-if="barcodes_readed.length > 0 && scanning">
-            <q-card-section>
+        <q-card style="margin: 10px 0px 10px 0px;" v-for="(barcode, index) in barcodes_readed" :key="index" @click="selectBarcode(barcode)" >
+            <q-card-section v-if="barcodes_readed.length > 0 && scanning" >
                 <q-item>
                     <q-item-section>
                         <q-item-label caption>{{ barcode }}</q-item-label>
@@ -392,9 +392,10 @@
                 this.scanning = false;
 
                 let palets_to_confirm = this.palet_selection.map(palet => this.packings[palet]);
-                // fetch this url 'http://192.168.1.159:3001/add-picking'
+                // fetch this url 'https://127.0.0.1:3002/add-picking'
                 // allow cors in the server
-                fetch('http://192.168.1.159:3001/add-picking', {
+                console.log(palets_to_confirm);
+                fetch('https://127.0.0.1:3002/add-picking', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -409,8 +410,10 @@
 
                 //remove from packings the palets that are in the palet_selection
                 this.packings = this.packings.filter((palet, index) => !this.palet_selection.includes(index));
+                this.selection = [];
                 this.palet_selection = [];
-    
+                this.selected_palet = null;
+
 
             },
             confirmBarcode() {
@@ -420,7 +423,7 @@
                 this.barcodes_readed = this.barcodes_readed.filter(barcode => barcode !== this.selected_barcode);
                 
 
-                fetch('http://192.168.1.159:3001/get-product' + this.selected_barcode)
+                fetch('https://127.0.0.1:3002/get-product-by-barcode?barcode=' + this.selected_barcode)
                 .then(response => { 
                     if (!response.ok) { // Verifica si el código de estado no es 2xx
                         throw new Error('Error en la solicitud: ' + response.status);
@@ -508,13 +511,13 @@
             let search_toolbar = document.getElementById('search-toolbar');
             search_toolbar.innerHTML = '';
             // Carga las ofs disponibles
-            fetch('http://192.168.1.159:3001/get-ofs')
+            fetch('https://127.0.0.1:3002/get-ofs')
             .then(response => response.json())
             .then(data => {
                 let result = data.map(of => {
                     return {
-                        name: of,
-                        value: of
+                        name: of['NUM_DOC_OF'],
+                        value: of['NUM_DOC_OF']
                     }
                 });
                 
@@ -523,7 +526,7 @@
                 console.log(result);
             });
 
-            fetch('http://192.168.1.159:3001/reset-barcodes')
+            fetch('https://127.0.0.1:3002/reset-barcodes')
             .then(response => response.json())
             .then(data => {
                 console.log(data);

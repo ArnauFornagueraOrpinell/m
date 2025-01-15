@@ -3,7 +3,7 @@
         <q-card-header>
             <q-item>
                 <q-item-section>
-                    <q-item-label style="font-size: large">ORDEN #{{picking.id}} </q-item-label>
+                    <q-item-label style="font-size: large">ORDEN #{{picking.ID_PICKING}} </q-item-label>
                     <q-item-label caption>Fecha: {{ picking.date }} | Orden: {{ picking.order }} | Numero de palets: {{ picking.packings.length }}</q-item-label>
                 </q-item-section>
             </q-item>
@@ -11,8 +11,8 @@
         <q-card-section v-show="this.selected_picking == `#${picking_index}`">
             <q-card @click.stop @click="toggleSelection(`#${picking_index}-${packing_index}`); " :id="'#'+picking_index+'-'+packing_index" style="margin: 10px 0px 10px 0px;" v-for="(packing, packing_index) in picking.packings" :key="packing_index">
                 <q-card-section>
-                    <q-item-label>Palet #{{packing.id}}-{{packing.of_group}}-{{packing.products[0].plant}} </q-item-label>
-                    <q-item-label caption>OF: {{packing.of_group }} | Numero de productos: {{ packing.products.length }}</q-item-label>
+                    <q-item-label>Palet #{{packing.id}}-{{packing.OF_GROUP}}-{{packing.products[0].UBICACIO_2}} </q-item-label>
+                    <q-item-label caption>OF: {{packing.OF_GROUP }} | Numero de productos: {{ packing.products.length }}</q-item-label>
                 </q-card-section>
                 
                 <q-card-section v-show="this.selected_packing == `#${picking_index}-${packing_index}`" style="margin: 0px 0px 0px 0px; padding: 0px 0px 0px 0px;">
@@ -25,16 +25,17 @@
                                 @click.stop  @click="toggleSelection(`#${picking_index}-${packing_index}-${product_index}`); console.log(this.selected_product + `#${picking_index}-${packing_index}-${product_index}`)"
                             />
                             <div @click.stop v-if="this.selected_product == `#${picking_index}-${packing_index}-${product_index}`" style="margin: 10px 0px 10px 0px; padding: 10px 10px 10px 10px; background-color: #f5f5f5;">
-                                <q-input v-model="product.name" label="Nombre" @input="updateProduct" />
-                                <q-input v-model="product.ref_piece" label="Referencia de Pieza"  @input="updateProduct" />
-                                <q-input v-model="product.description" label="Descripción"  @input="updateProduct"/>
-                                <q-input v-model="product.width" label="Ancho"  @input="updateProduct" />
-                                <q-input v-model="product.height" label="Alto"  @input="updateProduct" />
-                                <q-input v-model="product.thick" label="Grosor" @input="updateProduct" />
-                                <q-input v-model="product.raw_material" label="Material"  @input="updateProduct" />
-                                <q-input v-model="product.building" label="Edificio"  @input="updateProduct"/>
-                                <q-input v-model="product.plant" label="Planta"  @input="updateProduct" />
-                                <q-input v-model="product.room" label="Habitación"  @input="updateProduct" />
+                                <q-input v-model="product.ID_PACKING" label="Nombre" @input="updateProduct" />
+                                <q-input v-model="product.CODI_PRODUCTE" label="Referencia de Pieza"  @input="updateProduct" />
+                                <q-input v-model="product.DESCRIPCIO" label="Descripción"  @input="updateProduct"/>
+                                <q-input v-model="product.ANCHO" label="Ancho"  @input="updateProduct" />
+                                <q-input v-model="product.LARGO" label="Alto"  @input="updateProduct" />
+                                <q-input v-model="product.GRUESO" label="Grosor" @input="updateProduct" />
+                                <q-input v-model="product.QUANTITAT" label="Cantidad" @input="updateProduct" />
+                                <q-input v-model="product.UBICACIO_1" label="Edificio" @input="updateProduct" />
+                                <q-input v-model="product.UBICACIO_2" label="Planta" @input="updateProduct" />
+                                <q-input v-model="product.UBICACIO_3" label="Habitacion" @input="updateProduct" />
+     
                             </div>
                            
                         </q-item-section>
@@ -174,7 +175,7 @@
                 console.log('Confirmar orden:', this.pickings);
                 // TODO: guarda los items que tenga en pickings
                 // post to save the pickings
-                fetch('http://192.168.1.159:3001/save', {
+                fetch('https://127.0.0.1:3002/save', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -183,6 +184,7 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Data:', data);
                     this.getPickings();
                 })
 
@@ -322,21 +324,25 @@
                 search_toolbar.innerHTML = html;
 
 
-                fetch(`http://192.168.1.159:3001/page?page=1&length=${page_length}`)
-                .then(response => response.json())
-                .then(data => {
-                    this.pickings = data;
-                    this.original_pickings = JSON.parse(JSON.stringify(data));
-                    this.data = data;
-                })
+                // fetch(`https://127.0.0.1:3002/page?page=1&length=${page_length}`)
+                // .then(response => response.json())
+                // .then(data => {
+                //     this.pickings = data;
+                //     this.original_pickings = JSON.parse(JSON.stringify(data));
+                //     this.total_pages = data.totalPages;
+                //     this.data = data.data
+                // })
 
-                fetch(`http://192.168.1.159:3001/pages?length=${page_length}`)
+                fetch(`https://127.0.0.1:3002/page?length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Actual page" + this.actual_page)
+                    console.log('Actual page' + this.actual_page)
                     // ◀ 3 / 25 ▶
-                    let pickings_pages = data;
-                    this.total_pages = pickings_pages;
+                    if(!this.total_pages || !this.original_pickings || !this.data) {
+                        this.getPickingsPage(1);
+                    }
+                    let pickings_pages = data.totalPages;
+                    this.total_pages = data.totalPages;
                     console.log('Numero de paginas:', data);
                     let menu_paging = document.getElementById('pages');
                     menu_paging.innerHTML = '';
@@ -392,7 +398,7 @@
 
                     menu_paging.appendChild(button2);
 
-                    console.log("Actual page" + this.actual_page)
+                    console.log('Actual page' + this.actual_page)
 
 
 
@@ -402,13 +408,16 @@
             getPickingsPage(page_number) {
                 this.actual_page = page_number;
                 console.log('Página:', page_number);
-                fetch(`http://192.168.1.159:3001/page?page=${page_number}&length=${page_length}`)
+                fetch(`https://127.0.0.1:3002/page?page=${page_number}&length=${page_length}`)
                 .then(response => response.json())
                 .then(data => {
+                    this.data = data.data;
+                    this.data = data.data;
+                    this.total_pages = data.totalPages;
                     if ((this.actual_page <= this.total_pages) && (this.actual_page >= 1)) {
-                        this.pickings = data;
+                        this.pickings = data.data;
                         console.log('Pickings:', this.pickings[0].packings[0].products[0].id);
-                        this.data = data;
+                        this.total_pages = data.totalPages;
                         let page = document.getElementById('actual-page');
                         page.innerHTML = this.actual_page;
                     }
@@ -442,6 +451,37 @@
                 console.log('Eliminando producto:', this.selected_product);
                 console.log('Eliminando paleta:', this.selected_packing);
                 console.log('Eliminando orden:', this.selected_picking);
+
+                // Eliminar los elementos de selection
+                this.selection = [];
+                let json = {}
+                if (this.selected_product) {
+                    // Get the id of the product
+                    let picking_index = parseInt(this.selected_product.split('-')[0].split('#')[1]);
+                    let packing_index = parseInt(this.selected_product.split('-')[1]);
+                    let product_index = parseInt(this.selected_product.split('-')[2]);
+                    let id = this.pickings[picking_index].packings[packing_index].products[product_index].PRODUCT_ID;
+                    json.product = id;
+                } else {
+                    if (this.selected_packing) {
+                        let picking_index = parseInt(this.selected_packing.split('-')[0].split('#')[1]);
+                        let packing_index = parseInt(this.selected_packing.split('-')[1]);
+                        let id = this.pickings[picking_index].packings[packing_index].ID_PACKING;
+                        json.packing = id;
+                    } else {
+                        if (this.selected_picking) {
+                            let id = this.pickings[parseInt(this.selected_picking.split('#')[1])].ID_PICKING;
+                            json.picking = id;
+                        }
+                    }
+                }
+                fetch('https://127.0.0.1:3002/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(json)
+                })
  
                 // Elimina producto si es diferente de null
                 if (this.selected_product) {
@@ -477,8 +517,6 @@
                     return;
                 }
 
-                // Eliminar los elementos de selection
-                this.selection = [];
                 
             },
             toggleSelection(id) {

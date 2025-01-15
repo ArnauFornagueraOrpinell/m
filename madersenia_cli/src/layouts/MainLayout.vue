@@ -104,6 +104,18 @@ const linksList: EssentialLinkProps[] = [
     link: '/pickings'
   },
   {
+    title: 'Registrar Expedicion',
+    caption: '',
+    icon: 'record_voice_over',
+    link: '/scan-expedition'
+  },
+  {
+    title: 'Administrar Expediciones',
+    caption: '',
+    icon: 'record_voice_over',
+    link: '/expeditions'
+  },
+  {
     title: 'Salir',
     caption: '',
     icon: '',

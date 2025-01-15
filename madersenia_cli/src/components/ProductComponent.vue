@@ -3,10 +3,10 @@
     <q-card-section>
       <q-item>
         <q-item-section>
-          <q-item-label>Nombre</q-item-label>
+          <q-item-label>CODI_PRODUCTE</q-item-label>
           <q-input
-            v-model="model.width"
-            @input="updateValue('width')"
+            v-model="model.CODI_PRODUCTE"
+            @input="updateValue('CODI_PRODUCTE')"
             type="number"
             dense
             :readonly="!editable"
@@ -15,8 +15,8 @@
         <q-item-section>
           <q-item-label>Referencia</q-item-label>
           <q-input
-            v-model="model.ref_piece"
-            @input="updateValue('ref_piece')"
+            v-model="model.PRODUCT_ID"
+            @input="updateValue('PRODUCT_ID')"
             dense
             :readonly="!editable"
           />
@@ -29,17 +29,17 @@
         <q-item-section>
           <q-item-label>Descripción</q-item-label>
           <q-input
-            v-model="model.description"
-            @input="updateValue('description')"
+            v-model="model.DESCRIPCIO"
+            @input="updateValue('DESCRIPCIO')"
             dense
             :readonly="!editable"
           />
         </q-item-section>
         <q-item-section>
-          <q-item-label>Ancho</q-item-label>
+          <q-item-label>ANCHO</q-item-label>
           <q-input
-            v-model="model.width"
-            @input="updateValue('width')"
+            v-model="model.ANCHO"
+            @input="updateValue('ANCHO')"
             type="number"
             dense
             :readonly="!editable"
@@ -50,20 +50,20 @@
     <q-card-section>
       <q-item>
         <q-item-section>
-          <q-item-label>Alto</q-item-label>
+          <q-item-label>LARGO</q-item-label>
           <q-input
-            v-model="model.height"
-            @input="updateValue('height')"
+            v-model="model.LARGO"
+            @input="updateValue('LARGO')"
             type="number"
             dense
             :readonly="!editable"
           />
         </q-item-section>
         <q-item-section>
-          <q-item-label>Grosor</q-item-label>
+          <q-item-label>GRUESO</q-item-label>
           <q-input
-            v-model="model.thick"
-            @input="updateValue('thick')"
+            v-model="model.GRUESO"
+            @input="updateValue('GRUESO')"
             type="number"
             dense
             :readonly="!editable"
@@ -76,8 +76,8 @@
         <q-item-section>
           <q-item-label>Material</q-item-label>
           <q-input
-            v-model="model.raw_material"
-            @input="updateValue('raw_material')"
+            v-model="model.TIPUS_EMBALATGE"
+            @input="updateValue('TIPUS_EMBALATGE')"
             dense
             :readonly="!editable"
           />
@@ -85,8 +85,8 @@
         <q-item-section>
           <q-item-label>Edificio</q-item-label>
           <q-input
-            v-model="model.building"
-            @input="updateValue('building')"
+            v-model="model.UBICACIO_1"
+            @input="updateValue('UBICACIO_1')"
             dense
             :readonly="!editable"
           />
@@ -98,8 +98,8 @@
         <q-item-section>
           <q-item-label>Planta</q-item-label>
           <q-input
-            v-model="model.plant"
-            @input="updateValue('plant')"
+            v-model="model.UBICACIO_2"
+            @input="updateValue('UBICACIO_2')"
             dense
             :readonly="!editable"
           />
@@ -107,8 +107,8 @@
         <q-item-section>
           <q-item-label>Habitación</q-item-label>
           <q-input
-            v-model="model.room"
-            @input="updateValue('room')"
+            v-model="model.UBICACIO_3"
+            @input="updateValue('UBICACIO_3')"
             dense
             :readonly="!editable"
           />
