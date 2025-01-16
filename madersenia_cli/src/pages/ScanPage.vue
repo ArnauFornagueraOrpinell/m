@@ -116,7 +116,7 @@
   
         palets.value.push({
           name: '',
-          of_group: selectedOf.value.name,
+          OF_GROUP: selectedOf.value.name,
           products: [],
           id: palets.value.length
         })
@@ -158,7 +158,7 @@
           }
           const product = await response.json()
           
-          if (palets.value[selectedPalet.value].of_group !== selectedOf.value.name) {
+          if (palets.value[selectedPalet.value].OF_GROUP !== selectedOf.value.name) {
             throw new Error('OF no coincide')
           }
           
