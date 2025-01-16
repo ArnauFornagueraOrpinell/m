@@ -505,5 +505,102 @@ router.get('/get-products-table', dbMiddleware, dbCloseMiddleware, (req, res) =>
 });
 
 
+// https://192.168.1.158:3002/page?page=1&length=2 
+router.get('/page', dbMiddleware, dbCloseMiddleware, (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const length = parseInt(req.query.length) || 10;
+    
+    let conn;
+    try {
+        console.log("Attempting to connect: " + customConnStr);
+        conn = ibmdb.openSync(customConnStr);
+        console.log("Connected to: " + CUSTOM_DATABASE);
+
+        // First get total count for pagination
+        const countQuery = `
+            SELECT COUNT(*) AS TOTAL 
+            FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
+        `;
+        const [totalResult] = conn.querySync(countQuery);
+        const total = totalResult.TOTAL;
+        const totalPages = Math.ceil(total / length);
+
+        // Get paginated pickings
+        const pickingsQuery = `
+            SELECT PICKING_ID, NAME as PICKING_NAME 
+            FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
+            ORDER BY PICKING_ID DESC
+            OFFSET ${(page - 1) * length} ROWS
+            FETCH FIRST ${length} ROWS ONLY
+        `;
+        const pickings = conn.querySync(pickingsQuery);
+
+        // If no pickings found, return empty result
+        if (!pickings || !Array.isArray(pickings) || pickings.length === 0) {
+            return res.status(200).json({
+                data: [],
+                totalPages: totalPages,
+                currentPage: page,
+                totalItems: total
+            });
+        }
+
+        // For each picking, get its packings
+        const result = pickings.map(picking => {
+            // Get packings for this picking
+            const packingsQuery = `
+                SELECT 
+                    p.PACKING_ID,
+                    p.NAME as PACKING_NAME,
+                    p.OF_GROUP
+                FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} p
+                JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING pp 
+                    ON p.PACKING_ID = pp.PACKING_ID
+                WHERE pp.PICKING_ID = ?
+            `;
+            const packings = conn.querySync(packingsQuery, [picking.PICKING_ID]);
+
+            // For each packing, get its products
+            const packingsWithProducts = packings.map(packing => {
+                const productsQuery = `
+                    SELECT 
+                        prod.*,
+                        pp.QUANTITY as PACK_QUANTITY
+                    FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} prod
+                    JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT pp 
+                        ON prod.PRODUCT_ID = pp.PRODUCT_ID
+                    WHERE pp.PACKING_ID = ?
+                `;
+                const products = conn.querySync(productsQuery, [packing.PACKING_ID]);
+
+                return {
+                    ...packing,
+                    products: products || []
+                };
+            });
+
+            return {
+                picking_id: picking.PICKING_ID,
+                picking_name: picking.PICKING_NAME,
+                packings: packingsWithProducts || []
+            };
+        });
+
+        // Return paginated response
+        res.status(200).json({
+            data: result,
+            totalPages: totalPages,
+            currentPage: page,
+            totalItems: total
+        });
+
+    } catch (error) {
+        console.error("Error in paginated pickings:", error);
+        res.status(500).json({ 
+            error: error.message,
+            details: "Error fetching paginated pickings"
+        });
+    }
+});
 
 module.exports = router;

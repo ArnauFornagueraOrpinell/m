@@ -146,56 +146,6 @@ app.get('/reset-barcodes', (req, res) => {
 });
 
 
-// https://192.168.1.158:3002/page?page=1&length=2 
-app.get('/page', (req, res) => {
-  const page = req.query.page || 1;
-  const length = req.query.length || 10;
-  // responder con  una lista de los ultimos pickings, dentro de cada picking, los packings y dentro de cada packing los productos(encapsulados formando un json)
-  let conn;
-  try {
-    console.log("Attempting to connect: " + connStr);
-    conn = ibmdb.openSync(connStr);
-    console.log("Connected to: " + DATABASE);
-    // hacer la paginacion
-    let query = `
-      SELECT * FROM ${TAB_SCHEMA}.${TAB_PICKING_NAME}   
-      LIMIT ${length} OFFSET ${(page - 1) * length}
-    `;
-    const data = conn.querySync(query);
-    console.log("Data in view:", data);
-    // por cada picking, obtener los packings
-    for (let picking of data) {
-      query = `
-        SELECT * FROM ${TAB_SCHEMA}.PICKING_PACKING
-        JOIN ${TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${TAB_SCHEMA}.PICKING_PACKING.id_packing = ${TAB_SCHEMA}.${TAB_PACKING_NAME}.id_packing
-        WHERE ${TAB_SCHEMA}.PICKING_PACKING.id_picking = ?
-      `;
-      const packings = conn.querySync(query, [picking.ID_PICKING]);
-      console.log("Packings in picking:", packings);
-      picking.packings = packings;
-      // por cada packing, obtener los productos
-      for (let packing of packings) {
-        query = `
-          SELECT * FROM ${TAB_SCHEMA}.PACKING_PRODUCT
-          JOIN ${TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${TAB_SCHEMA}.PACKING_PRODUCT.product_id = ${TAB_SCHEMA}.${TAB_PRODUCT_NAME}.product_id
-          WHERE ${TAB_SCHEMA}.PACKING_PRODUCT.id_packing = ?
-        `;
-        const products = conn.querySync(query, [packing.ID_PACKING]);
-        packing.products = products;
-        console.log("Products in packing:", products);
-      }
-    }
-    // Get the total number of pages
-    query = `SELECT COUNT(*) AS TOTAL FROM ${TAB_SCHEMA}.${TAB_PICKING_NAME}`;
-    const [totalResult] = conn.querySync(query);
-    const total = totalResult.TOTAL;
-    const totalPages = Math.ceil(total / length);
-    res.status(200).json({ data, totalPages });
-  } catch (error) {
-    console.log("Error getting pickings:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 app.post('/save', (req, res) => {
 //   [
