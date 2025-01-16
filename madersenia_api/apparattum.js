@@ -369,34 +369,6 @@ router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
   });
 
 
-  
-// REVIEW
-// router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
-//     // rerturns pickings with the packings and the products
-//     let conn;
-//     try {
-//       console.log("Attempting to connect: " + customConnStr);
-//       conn = ibmdb.openSync(customConnStr);
-//       console.log("Connected to: " +  CUSTOM_DATABASE);
-  
-//       let query = `
-//         SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
-//         JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.PICKING_ID = ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PICKING_ID
-//         JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID
-//         JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PACKING_ID
-//         JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
-//       `;
-//       const data = conn.querySync(query);
-//       console.log("Data in view:", data);
-  
-//       res.status(200).json(data);
-//     } catch (error) {
-//       console.log("Error getting pickings:", error);
-//       res.status(500).json({ error: error.message });
-//     }
-//   });
-  
-
   // REVIEW
 router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => {
     const id = req.params.id;
@@ -410,33 +382,61 @@ router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => 
     pickings = pickings.map(picking => (picking.id === id ? new_picking : picking));
     res.send('Picking updated');
   });
-  
   router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
-    // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
     let conn;
     try {
-      console.log("Attempting to connect: " + customConnStr);
-      conn = ibmdb.openSync(customConnStr);
-      console.log("Connected to: " +  CUSTOM_DATABASE);
-  
-      let query = `
-        SELECT * 
-            FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} 
-            JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.PICKING_ID = ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PICKING_ID
-            JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID
-            JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PACKING_ID
-            JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
-      `;
-  
-      const data = conn.querySync(query);
-      console.log("Data in view:", data);
-  
-      res.status(200).json(data);
+        console.log("Attempting to connect: " + customConnStr);
+        conn = ibmdb.openSync(customConnStr);
+        console.log("Connected to: " + CUSTOM_DATABASE);
+
+        // First, get all pickings
+        const pickings = conn.querySync(`
+            SELECT PICKING_ID, NAME as PICKING_NAME
+            FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
+        `);
+
+        // For each picking, get its packings and products
+        const result = pickings.map(picking => {
+            // Get packings for this picking
+            const packings = conn.querySync(`
+                SELECT p.PACKING_ID, p.NAME as PACKING_NAME, p.OF_GROUP
+                FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} p
+                JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING pp ON p.PACKING_ID = pp.PACKING_ID
+                WHERE pp.PICKING_ID = ?
+            `, [picking.PICKING_ID]);
+
+            // For each packing, get its products
+            const packingsWithProducts = packings.map(packing => {
+                const products = conn.querySync(`
+                    SELECT 
+                        prod.*,
+                        pp.QUANTITY as PACK_QUANTITY
+                    FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} prod
+                    JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT pp 
+                        ON prod.PRODUCT_ID = pp.PRODUCT_ID
+                    WHERE pp.PACKING_ID = ?
+                `, [packing.PACKING_ID]);
+
+                return {
+                    ...packing,
+                    products: products
+                };
+            });
+
+            return {
+                picking_id: picking.PICKING_ID,
+                picking_name: picking.PICKING_NAME,
+                packings: packingsWithProducts
+            };
+        });
+
+        console.log("Data retrieved:", result);
+        res.status(200).json(result);
     } catch (error) {
-      console.log("Error getting pickings:", error);
-      res.status(500).json({ error: error.message });
+        console.log("Error getting pickings:", error);
+        res.status(500).json({ error: error.message });
     }
-  });
+});
 
   router.get('/get-pickings-table', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
