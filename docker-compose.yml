@@ -1,0 +1,108 @@
+version: '3.8'
+services:
+  db2:
+    image: taskana/db2:11.1
+    container_name: db2
+    ports:
+      - "50000:50000"
+    environment:
+      - LICENSE=accept
+      - DB2INST1_PASSWORD=db2inst1-pwd
+      - DBNAME=TSKDB
+    privileged: true
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    # Aumentado a 4 CPUs
+          memory: '1G'   # Aumentado a 8GB de RAM
+        reservations:
+          cpus: '0.25'    # Mínimo de 2 CPUs
+          memory: '1G'   # Mínimo de 4GB de RAM
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "su - db2inst1 -c 'db2 list applications'"]
+      interval: 4s
+      timeout: 2s
+      retries: 3
+      start_period: 3s    
+    networks:
+      - madersenia-network
+
+  madersenia-api:
+    build:
+      context: ./madersenia_api
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: madersenia-api
+    ports:
+      - "3002:3002"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'    # Aumentado de 0.50 a 1.0 CPU
+          memory: '1G'   # Aumentado de 512M a 1G
+        reservations:
+          cpus: '0.50'   # Mínimo de 0.5 CPU
+          memory: '512M' # Mínimo de 512M
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=768  # Aumentado de 512 a 768
+      # Añadir variables de entorno adicionales si es necesario
+      # - DATABASE_URL=db2://user:pass@db2:50000/TSKDB
+    networks:
+      - madersenia-network
+
+  madersenia-cli:
+    build:
+      context: ./madersenia_cli
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: madersenia-cli
+    ports:
+      - "8443:443"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: '512M'
+        reservations:
+          cpus: '0.25'
+          memory: '256M'
+    networks:
+      - madersenia-network
+
+  # Monitor de recursos (opcional)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '256M'
+    networks:
+      - madersenia-network
+
+networks:
+  madersenia-network:
+    driver: bridge
+    name: madersenia-network
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.driver.mtu: 1450
+
+
+    # Configuraciones de red adicionales si es necesario
+    # ipam:
+    #   config:
+    #     - subnet: 172.20.0.0/16
+
