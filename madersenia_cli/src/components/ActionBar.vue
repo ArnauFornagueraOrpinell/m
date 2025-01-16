@@ -1,45 +1,63 @@
 <template>
     <div class="action-bar">
-      <transition 
-        name="confirm-slide"
-        enter-active-class="animated slideInLeft"
-        leave-active-class="animated fadeOut slower slideOutLeft linear"
-      >
-        <div 
-          v-if="selectedProducts.length > 0 && totalPalets > 0"
-          class="action-button confirm half-width"
-          @click.stop="$emit('confirm')"
+      <div class="actions-container">
+        <!-- Botón de eliminar -->
+        <transition
+          appear
+          enter-active-class="animated fadeIn"
+          leave-active-class="animated fadeOut"
         >
-          CONFIRMAR: <b>{{ selectedPalets.length }}</b> PALETS
-        </div>
-        <div 
-          v-else-if="totalPalets > 0"
-          class="action-button confirm full-width"
-          @click="$emit('confirm')"
-        >
-          CONFIRMAR: <b>{{ totalPalets }}</b> PALETS
-        </div>
-      </transition>
+          <q-btn
+            v-if="selectedProducts.length > 0"
+            class="delete-button"
+            unelevated
+            :class="{ 'half-width': showBothButtons, 'full-width': !showBothButtons }"
+            color="negative"
+            @click="$emit('delete')"
+          >
+            <div class="button-content">
+              <q-icon name="delete" size="24px" class="q-mr-sm" />
+              <span>
+                ELIMINAR: <b>{{ selectedProducts.length }}</b> 
+                PRODUCTO{{ selectedProducts.length > 1 ? 'S' : '' }}
+              </span>
+            </div>
+          </q-btn>
+        </transition>
   
-      <transition 
-        name="delete-slide"
-        enter-active-class="animated slideInLeft"
-      >
-        <div 
-          v-if="selectedProducts.length > 0"
-          class="action-button delete half-width"
-          @click="$emit('delete')"
+        <!-- Botón de confirmar -->
+        <transition
+          appear
+          enter-active-class="animated fadeIn"
+          leave-active-class="animated fadeOut"
         >
-          ELIMINAR: <b>{{ selectedProducts.length }}</b> 
-          PRODUCTO{{ selectedProducts.length > 1 ? 'S' : '' }}
-        </div>
-      </transition>
+          <q-btn
+            v-if="showConfirmButton"
+            class="confirm-button"
+            unelevated
+            :class="{ 'half-width': showBothButtons, 'full-width': !showBothButtons }"
+            color="positive"
+            @click="$emit('confirm')"
+          >
+            <div class="button-content">
+              <q-icon name="check_circle" size="24px" class="q-mr-sm" />
+              <span>
+                CONFIRMAR: <b>{{ confirmCount }}</b> 
+                {{ confirmCount > 1 ? 'PALETS' : 'PALET' }}
+              </span>
+            </div>
+          </q-btn>
+        </transition>
+      </div>
     </div>
   </template>
   
   <script>
+  import { computed } from 'vue'
+  
   export default {
     name: 'ActionBar',
+    
     props: {
       selectedProducts: {
         type: Array,
@@ -54,6 +72,19 @@
         required: true
       }
     },
+  
+    setup(props) {
+      const showConfirmButton = computed(() => props.totalPalets > 0)
+      const showBothButtons = computed(() => props.selectedProducts.length > 0 && props.totalPalets > 0)
+      const confirmCount = computed(() => props.selectedPalets.length || props.totalPalets)
+  
+      return {
+        showConfirmButton,
+        showBothButtons,
+        confirmCount
+      }
+    },
+  
     emits: ['confirm', 'delete']
   }
   </script>
@@ -64,64 +95,86 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 56px;
-    display: flex;
+    height: 60px;
+    background: white;
     z-index: 1000;
+    padding: 8px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
   
-    .action-button {
-      padding: 16px;
-      color: white;
-      cursor: pointer;
+    .actions-container {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      transition: all 0.3s ease;
+      gap: 8px;
+      height: 100%;
+      
+      .q-btn {
+        font-size: 14px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
   
-      b {
-        font-size: 20px;
-        margin: 0 8px;
-      }
-  
-      &.confirm {
-        background-color: #2e7d32;
-        &:hover {
-          background-color: darken(#2e7d32, 5%);
+        &.half-width {
+          width: 50%;
         }
-      }
   
-      &.delete {
-        background-color: #d32f2f;
-        &:hover {
-          background-color: darken(#d32f2f, 5%);
+        &.full-width {
+          width: 100%;
         }
-      }
   
-      &.half-width {
-        width: 50%;
-      }
+        .button-content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+        }
   
-      &.full-width {
-        width: 100%;
+        b {
+          font-size: 18px;
+          font-weight: 600;
+          margin: 0 4px;
+        }
+  
+        &:hover {
+          transform: translateY(-1px);
+        }
+  
+        &:active {
+          transform: translateY(0);
+        }
       }
     }
   }
   
-  // Animaciones
-  .confirm-slide-enter-active, 
-  .confirm-slide-leave-active,
-  .delete-slide-enter-active, 
-  .delete-slide-leave-active {
-    transition: transform 0.3s ease;
+  // Hacer las animaciones más suaves
+  .animated {
+    animation-duration: 0.3s;
   }
   
-  .confirm-slide-enter-from,
-  .confirm-slide-leave-to {
-    transform: translateX(100%);
+  .fadeIn {
+    animation-name: fadeIn;
   }
   
-  .delete-slide-enter-from,
-  .delete-slide-leave-to {
-    transform: translateX(-100%);
+  .fadeOut {
+    animation-name: fadeOut;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(10px);
+    }
   }
   </style>
