@@ -306,7 +306,7 @@ router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
         conn.querySync(query, [pickingId, packingId]);
   
         // Insertar los productos del packing
-        for (const product of packing.products) {
+        for (const product of packing?.products) {
           // Verificar si el producto ya existe
           query = `SELECT PRODUCT_ID FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} WHERE CODI_PRODUCTE = ?`;
           const productResult = conn.querySync(query, [product.CODI_PRODUCTE]);
