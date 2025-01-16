@@ -33,13 +33,25 @@
               <div class="text-h6 q-my-none">Producto #{{ model.CODI_PRODUCTE }}</div>
               <div class="text-subtitle2 q-my-none" v-if="!isCollapsed">Ref: {{ model.PRODUCT_ID }}</div>
             </div>
-            <div class="col-auto" v-if="!isCollapsed">
+            <div class="col-auto" v-if="!isCollapsed" class="row items-center">
               <q-badge 
                 :color="editable ? 'positive' : 'grey'" 
                 class="q-pa-sm q-mr-sm"
               >
                 {{ editable ? 'Modo Edición' : 'Solo Lectura' }}
               </q-badge>
+              <q-btn
+                v-if="deletable"
+                flat
+                round
+                dense
+                color="negative"
+                icon="delete"
+                class="q-ml-sm"
+                @click.stop="confirmDelete"
+              >
+                <q-tooltip>Eliminar producto</q-tooltip>
+              </q-btn>
             </div>
           </div>
         </div>
@@ -201,15 +213,37 @@
         </q-card-section>
       </div>
     </q-slide-transition>
+
+    <!-- Diálogo de confirmación de eliminación -->
+    <q-dialog v-model="showDeleteDialog" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="warning" color="negative" text-color="white" />
+          <span class="q-ml-sm">¿Está seguro de que desea eliminar este producto?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="primary" v-close-popup />
+          <q-btn flat label="Eliminar" color="negative" @click="deleteProduct" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-card>
 </template>
 
 <script>
 import { ref, watch } from 'vue';
+import { api } from 'boot/axios';
+import { useQuasar } from 'quasar';
 
 export default {
   props: {
     editable: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    deletable: {
       type: Boolean,
       required: false,
       default: false
@@ -223,11 +257,13 @@ export default {
       required: true
     }
   },
-  emits: ['update:modelValue', 'selected', 'deselected'],
+  emits: ['update:modelValue', 'selected', 'deselected', 'deleted'],
   setup(props, { emit }) {
+    const $q = useQuasar();
     const model = ref(props.modelValue);
     const isCollapsed = ref(false);
     const isSelected = ref(false);
+    const showDeleteDialog = ref(false);
 
     const updateValue = (key) => {
       if (props.editable) {
@@ -248,6 +284,27 @@ export default {
       }
     }
 
+    const confirmDelete = () => {
+      showDeleteDialog.value = true;
+    }
+
+    const deleteProduct = async () => {
+      try {
+        await api.delete(`/delete-product/${model.value.PRODUCT_ID}`);
+        $q.notify({
+          type: 'positive',
+          message: 'Producto eliminado correctamente'
+        });
+        emit('deleted', props.id);
+      } catch (error) {
+        $q.notify({
+          type: 'negative',
+          message: 'Error al eliminar el producto',
+          caption: error.response?.data?.error || error.message
+        });
+      }
+    }
+
     watch(() => props.modelValue, (newVal) => {
       model.value = newVal;
     });
@@ -256,9 +313,12 @@ export default {
       model,
       isCollapsed,
       isSelected,
+      showDeleteDialog,
       updateValue,
       toggleCollapse,
-      handleCardClick
+      handleCardClick,
+      confirmDelete,
+      deleteProduct
     }
   }
 };

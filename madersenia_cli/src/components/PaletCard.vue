@@ -1,12 +1,12 @@
 <template>
     <q-card 
-      :id="paletId" 
-      class="palet-card q-ma-md q-mt-lg"
+      :id="packingId" 
+      class="packing-card q-ma-md q-mt-lg"
       :class="{ 'selected': isSelected }"
       @click="handleCardClick"
     >
       <!-- Header siempre visible -->
-      <div class="palet-header">
+      <div class="packing-header">
         <q-item>
           <q-item-section avatar>
             <q-btn
@@ -19,16 +19,29 @@
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-h6">
-              {{ paletTitle }}
+              {{ packingTitle }}
             </q-item-label>
             <q-item-label caption>
-              OF: {{ palet.OF_GROUP }}
+              OF: {{ packing.OF_GROUP }}
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-chip color="primary" text-color="white" size="sm">
-              {{ palet.products.length }} productos
-            </q-chip>
+            <div class="row items-center">
+              <q-chip color="primary" text-color="white" size="sm" class="q-mr-sm">
+                {{ packing.products.length }} productos
+              </q-chip>
+              <q-btn
+                v-if="deletable"
+                flat
+                round
+                dense
+                color="negative"
+                icon="delete"
+                @click.stop="confirmDelete"
+              >
+                <q-tooltip>Eliminar packing</q-tooltip>
+              </q-btn>
+            </div>
           </q-item-section>
         </q-item>
         
@@ -43,17 +56,20 @@
           <q-card-section class="products-section">
             <q-list>
               <q-item 
-                v-for="(product, index) in palet.products" 
+                v-for="(product, index) in packing.products" 
                 :key="index"
                 @click.stop
               >
                 <q-item-section>
                   <ProductComponent
-                    :model-value="palet.products[index]"
+                    :model-value="packing.products[index]"
                     @update:model-value="$emit('update:product', { index, value: $event })"
                     :id="getProductId(product)"
                     :class="{ 'selected': selectedProducts.includes(product) }"
                     @click.stop="$emit('product-click', product)"
+                    :editable="editable"
+                    :deletable="deletable"
+                    @deleted="handleProductDeleted(index)"
                   />
                 </q-item-section>
               </q-item>
@@ -72,24 +88,41 @@
           </q-card-section>
         </div>
       </q-slide-transition>
+  
+      <!-- Diálogo de confirmación de eliminación -->
+      <q-dialog v-model="showDeleteDialog" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="warning" color="negative" text-color="white" />
+            <span class="q-ml-sm">¿Está seguro de que desea eliminar este packing y todos sus productos relacionados?</span>
+          </q-card-section>
+  
+          <q-card-actions align="right">
+            <q-btn flat label="Cancelar" color="primary" v-close-popup />
+            <q-btn flat label="Eliminar" color="negative" @click="deletePacking" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </q-card>
   </template>
   
   <script>
   import { ref } from 'vue'
   import ProductComponent from './ProductComponent.vue'
+  import { api } from 'boot/axios'
+  import { useQuasar } from 'quasar'
   
   export default {
-    name: 'PaletCard',
+    name: 'PackingCard',
     components: {
       ProductComponent
     },
     props: {
-      palet: {
+      packing: {
         type: Object,
         required: true
       },
-      paletIndex: {
+      packingIndex: {
         type: Number,
         required: true
       },
@@ -100,10 +133,20 @@
       selectedProducts: {
         type: Array,
         default: () => []
+      },
+      editable: {
+        type: Boolean,
+        default: false
+      },
+      deletable: {
+        type: Boolean,
+        default: false
       }
     },
     setup(props, { emit }) {
+      const $q = useQuasar()
       const isExpanded = ref(false)
+      const showDeleteDialog = ref(false)
   
       const toggleExpand = (event) => {
         event.stopPropagation()
@@ -114,34 +157,70 @@
         emit('click')
       }
   
+      const confirmDelete = () => {
+        showDeleteDialog.value = true
+      }
+  
+      const deletePacking = async () => {
+        try {
+          await api.delete(`/delete-packing/${props.packing.PACKING_ID}`)
+          $q.notify({
+            type: 'positive',
+            message: 'Packing eliminado correctamente'
+          })
+          emit('deleted', props.packingIndex)
+        } catch (error) {
+          $q.notify({
+            type: 'negative',
+            message: 'Error al eliminar el packing',
+            caption: error.response?.data?.error || error.message
+          })
+        }
+      }
+  
+      const handleProductDeleted = (productIndex) => {
+        emit('product-deleted', productIndex)
+      }
+  
       return {
         isExpanded,
+        showDeleteDialog,
         toggleExpand,
-        handleCardClick
+        handleCardClick,
+        confirmDelete,
+        deletePacking,
+        handleProductDeleted
       }
     },
     computed: {
-      paletId() {
-        return `palet-${this.paletIndex}`
+      packingId() {
+        return `packing-${this.packingIndex}`
       },
-      paletTitle() {
-        const paletNum = this.paletIndex + 1
-        const ofNum = this.palet.NUM_DOCUMENT_OF?.toUpperCase() || this.palet.OF_GROUP
-        const location = this.palet.products[0]?.UBICACIO_3?.toUpperCase() || ''
-        return `PALET #${paletNum}-${ofNum}${location ? '-' + location : ''}`
+      packingTitle() {
+        const packingNum = this.packingIndex + 1
+        const ofNum = this.packing.OF_GROUP?.toUpperCase()
+        const location = this.packing.products[0]?.UBICACIO_3?.toUpperCase() || ''
+        return `PACKING #${packingNum}-${ofNum}${location ? '-' + location : ''}`
       }
     },
     methods: {
       getProductId(product) {
-        return `#${product.NUM_DOCUMENT_OF}-${product.CODI_PRODUCTE}`
+        return `#${product.PRODUCT_ID}`
       }
     },
-    emits: ['click', 'product-click', 'add-product', 'update:product']
+    emits: [
+      'click', 
+      'product-click', 
+      'add-product', 
+      'update:product', 
+      'deleted',
+      'product-deleted'
+    ]
   }
   </script>
   
   <style lang="scss" scoped>
-  .palet-card {
+  .packing-card {
     transition: all 0.3s ease;
     border: 1px solid rgba(0, 0, 0, 0.12);
     
@@ -150,7 +229,7 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   
-    .palet-header {
+    .packing-header {
       cursor: pointer;
       &:hover {
         background: rgba(0,0,0,0.03);

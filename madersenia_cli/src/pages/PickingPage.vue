@@ -42,7 +42,7 @@
       <div class="picking-list q-gutter-y-md">
         <q-card
           v-for="(picking, pickingIndex) in pickings"
-          :key="picking.ID_PICKING"
+          :key="picking.PICKING_ID"
           :class="{ 'selected-card': selectedPicking === pickingIndex }"
           class="picking-card"
         >
@@ -53,50 +53,52 @@
           >
             <div class="row items-center no-wrap">
               <div class="col">
-                <div class="text-h6">ORDEN #{{ picking.ID_PICKING }}</div>
+                <div class="text-h6">ORDEN #{{ picking.PICKING_ID }}</div>
                 <div class="text-caption">
-                  Fecha: {{ picking.date }} | Orden: {{ picking.order }} | 
                   Palets: {{ picking.packings.length }}
                 </div>
               </div>
-              <q-btn
-                flat
-                round
-                :icon="selectedPicking === pickingIndex ? 'keyboard_arrow_down' : 'keyboard_arrow_right'"
-              />
+              <div class="col-auto">
+                <q-btn
+                  v-if="selectedPicking === pickingIndex"
+                  flat
+                  round
+                  color="negative"
+                  icon="delete"
+                  @click.stop="confirmDeletePicking(picking)"
+                >
+                  <q-tooltip>Eliminar picking</q-tooltip>
+                </q-btn>
+                <q-btn
+                  flat
+                  round
+                  :icon="selectedPicking === pickingIndex ? 'keyboard_arrow_down' : 'keyboard_arrow_right'"
+                />
+              </div>
             </div>
           </q-card-section>
   
-          <!-- Lista de Palets -->
+          <!-- Lista de Packings -->
           <q-slide-transition>
             <div v-show="selectedPicking === pickingIndex">
               <q-separator />
               <q-card-section class="q-pa-none">
                 <div class="q-pa-md q-gutter-y-md">
-                  <palet-card
-                    v-for="(palet, paletIndex) in picking.packings"
-                    :key="paletIndex"
-                    :palet="palet"
-                    :palet-index="paletIndex"
-                    :is-selected="selectedPacking === `${pickingIndex}-${paletIndex}`"
+                  <packing-card
+                    v-for="(packing, packingIndex) in picking.packings"
+                    :key="packingIndex"
+                    :packing="packing"
+                    :packing-index="packingIndex"
+                    :is-selected="selectedPacking === `${pickingIndex}-${packingIndex}`"
                     :selected-products="selectedProducts"
-                    @click="handlePaletClick(pickingIndex, paletIndex)"
+                    :editable="true"
+                    :deletable="true"
+                    @click="handlePackingClick(pickingIndex, packingIndex)"
                     @product-click="handleProductClick"
+                    @deleted="handlePackingDeleted(pickingIndex, packingIndex)"
+                    @product-deleted="handleProductDeleted(pickingIndex, packingIndex, $event)"
                   >
-                    <template #actions v-if="selectedPacking === `${pickingIndex}-${paletIndex}`">
-                      <div class="row q-gutter-sm justify-end q-px-sm">
-                        <q-btn
-                          flat
-                          round
-                          color="negative"
-                          icon="delete"
-                          @click.stop="handleDeletePalet(pickingIndex, paletIndex)"
-                        >
-                          <q-tooltip>Eliminar palet</q-tooltip>
-                        </q-btn>
-                      </div>
-                    </template>
-                  </palet-card>
+                  </packing-card>
                 </div>
               </q-card-section>
             </div>
@@ -110,13 +112,27 @@
         <div class="text-h6 text-grey-7 q-mt-md">No hay órdenes disponibles</div>
       </div>
   
+      <!-- Diálogo de confirmación para eliminar picking -->
+      <q-dialog v-model="showDeleteDialog" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="warning" color="negative" text-color="white" />
+            <span class="q-ml-sm">¿Está seguro de que desea eliminar este picking y todos sus packings relacionados?</span>
+          </q-card-section>
+  
+          <q-card-actions align="right">
+            <q-btn flat label="Cancelar" color="primary" v-close-popup />
+            <q-btn flat label="Eliminar" color="negative" @click="deletePicking" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+  
       <!-- Barra de acciones -->
       <action-bar
         :selected-products="selectedProducts"
-        :selected-palets="getSelectedPalets"
-        :total-palets="getTotalPalets"
+        :selected-packings="getSelectedPackings"
+        :total-packings="getTotalPackings"
         @confirm="handleConfirm"
-        @delete="handleDelete"
       />
   
       <!-- Loading overlay -->
@@ -128,8 +144,10 @@
   
   <script>
   import { ref, computed } from 'vue'
-  import PaletCard from 'components/PaletCard.vue'
+  import PackingCard from 'components/PackingCard.vue'
   import ActionBar from 'components/ActionBar.vue'
+  import { api } from 'boot/axios'
+  import { useQuasar } from 'quasar'
   
   const PAGE_SIZE = 2
   
@@ -137,11 +155,13 @@
     name: 'PickingPage',
     
     components: {
-      PaletCard,
+      PackingCard,
       ActionBar
     },
   
     setup() {
+      const $q = useQuasar()
+      
       // Estado
       const pickings = ref([])
       const originalPickings = ref([])
@@ -152,15 +172,17 @@
       const totalPages = ref(0)
       const loading = ref(false)
       const searchQuery = ref('')
+      const showDeleteDialog = ref(false)
+      const pickingToDelete = ref(null)
   
       // Computed
-      const getSelectedPalets = computed(() => {
+      const getSelectedPackings = computed(() => {
         if (!selectedPacking.value) return []
-        const [pickingIndex, paletIndex] = selectedPacking.value.split('-')
-        return [[pickingIndex, paletIndex]]
+        const [pickingIndex, packingIndex] = selectedPacking.value.split('-')
+        return [[pickingIndex, packingIndex]]
       })
   
-      const getTotalPalets = computed(() => {
+      const getTotalPackings = computed(() => {
         return pickings.value.reduce((total, picking) => total + picking.packings.length, 0)
       })
   
@@ -168,14 +190,18 @@
       const fetchPickings = async (page) => {
         loading.value = true
         try {
-          const response = await fetch(`https://192.168.0.197:3002/page?page=${page}&length=${PAGE_SIZE}`)
-          const data = await response.json()
-          pickings.value = data.data
-          originalPickings.value = JSON.parse(JSON.stringify(data.data))
-          totalPages.value = data.totalPages
+          const response = await api.get(`/page?page=${page}&length=${PAGE_SIZE}`)
+          pickings.value = response.data.data
+          originalPickings.value = JSON.parse(JSON.stringify(response.data.data))
+          totalPages.value = response.data.totalPages
           actualPage.value = page
         } catch (error) {
           console.error('Error fetching pickings:', error)
+          $q.notify({
+            type: 'negative',
+            message: 'Error al cargar los pickings',
+            caption: error.response?.data?.error || error.message
+          })
         } finally {
           loading.value = false
         }
@@ -193,9 +219,9 @@
         selectedProducts.value = []
       }
   
-      const handlePaletClick = (pickingIndex, paletIndex) => {
-        const paletId = `${pickingIndex}-${paletIndex}`
-        selectedPacking.value = selectedPacking.value === paletId ? null : paletId
+      const handlePackingClick = (pickingIndex, packingIndex) => {
+        const packingId = `${pickingIndex}-${packingIndex}`
+        selectedPacking.value = selectedPacking.value === packingId ? null : packingId
         selectedProducts.value = []
       }
   
@@ -208,71 +234,64 @@
         }
       }
   
+      const confirmDeletePicking = (picking) => {
+        pickingToDelete.value = picking
+        showDeleteDialog.value = true
+      }
+  
+      const deletePicking = async () => {
+        if (!pickingToDelete.value) return
+  
+        loading.value = true
+        try {
+          await api.delete(`/delete/${pickingToDelete.value.PICKING_ID}`)
+          $q.notify({
+            type: 'positive',
+            message: 'Picking eliminado correctamente'
+          })
+          await fetchPickings(actualPage.value)
+          selectedPicking.value = null
+          selectedPacking.value = null
+          selectedProducts.value = []
+        } catch (error) {
+          console.error('Error deleting picking:', error)
+          $q.notify({
+            type: 'negative',
+            message: 'Error al eliminar el picking',
+            caption: error.response?.data?.error || error.message
+          })
+        } finally {
+          loading.value = false
+          pickingToDelete.value = null
+        }
+      }
+  
+      const handlePackingDeleted = async (pickingIndex, packingIndex) => {
+        await fetchPickings(actualPage.value)
+        selectedPacking.value = null
+        selectedProducts.value = []
+      }
+  
+      const handleProductDeleted = async (pickingIndex, packingIndex, productIndex) => {
+        await fetchPickings(actualPage.value)
+      }
+  
       const handleConfirm = async () => {
         loading.value = true
         try {
-          const response = await fetch('https://192.168.0.197:3002/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pickings.value)
+          await api.post('/save-pickings', pickings.value)
+          $q.notify({
+            type: 'positive',
+            message: 'Cambios guardados correctamente'
           })
-          if (response.ok) {
-            await fetchPickings(actualPage.value)
-          }
+          await fetchPickings(actualPage.value)
         } catch (error) {
           console.error('Error saving changes:', error)
-        } finally {
-          loading.value = false
-        }
-      }
-  
-      const handleDelete = async () => {
-        if (!selectedPacking.value && selectedProducts.value.length === 0) return
-  
-        const deletePayload = {}
-        if (selectedProducts.value.length > 0) {
-          deletePayload.product = selectedProducts.value[0].PRODUCT_ID
-        } else if (selectedPacking.value) {
-          const [pickingIndex, paletIndex] = selectedPacking.value.split('-')
-          deletePayload.packing = pickings.value[pickingIndex].packings[paletIndex].ID_PACKING
-        }
-  
-        loading.value = true
-        try {
-          const response = await fetch('https://192.168.0.197:3002/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(deletePayload)
+          $q.notify({
+            type: 'negative',
+            message: 'Error al guardar los cambios',
+            caption: error.response?.data?.error || error.message
           })
-          if (response.ok) {
-            await fetchPickings(actualPage.value)
-            selectedPacking.value = null
-            selectedProducts.value = []
-          }
-        } catch (error) {
-          console.error('Error deleting items:', error)
-        } finally {
-          loading.value = false
-        }
-      }
-  
-      const handleDeletePalet = async (pickingIndex, paletIndex) => {
-        const palet = pickings.value[pickingIndex].packings[paletIndex]
-        const deletePayload = { packing: palet.ID_PACKING }
-        
-        loading.value = true
-        try {
-          const response = await fetch('https://192.168.0.197:3002/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(deletePayload)
-          })
-          if (response.ok) {
-            await fetchPickings(actualPage.value)
-            selectedPacking.value = null
-          }
-        } catch (error) {
-          console.error('Error deleting palet:', error)
         } finally {
           loading.value = false
         }
@@ -290,15 +309,18 @@
         totalPages,
         loading,
         searchQuery,
-        getSelectedPalets,
-        getTotalPalets,
+        showDeleteDialog,
+        getSelectedPackings,
+        getTotalPackings,
         getPickingsPage,
         handlePickingClick,
-        handlePaletClick,
+        handlePackingClick,
         handleProductClick,
         handleConfirm,
-        handleDelete,
-        handleDeletePalet
+        confirmDeletePicking,
+        deletePicking,
+        handlePackingDeleted,
+        handleProductDeleted
       }
     }
   }
