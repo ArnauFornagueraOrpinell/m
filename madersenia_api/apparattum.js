@@ -284,7 +284,7 @@ router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
   
       // Insertar el picking
       let query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} (NAME) VALUES (?)`;
-      conn.querySync(query, [pickingData[0].name || 'Unnamed Picking']);
+      conn.querySync(query, [pickingData[0].NAME || 'Unnamed Picking']);
   
       // Obtener el ID del picking recién insertado
       query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
@@ -294,7 +294,7 @@ router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
       for (const packing of pickingData) {
         // Insertar el packing
         query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} (NAME, OF_GROUP) VALUES (?, ?)`;
-        conn.querySync(query, [packing.name || 'Unnamed Packing', packing.of_group]);
+        conn.querySync(query, [packing.NAME || 'Unnamed Packing', packing.of_group]);
   
         // Obtener el ID del packing recién insertado
         query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
