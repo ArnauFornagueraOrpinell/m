@@ -65,11 +65,11 @@
   
   <script>
   import { ref, onMounted } from 'vue'
-  import WarningDialog from './WarningDialog.vue'
-  import ScannerDialog from './ScannerDialog.vue'
-  import OfSelector from './OfSelector.vue'
-  import ProductList from './ProductList.vue'
-  import ActionBar from './ActionBar.vue'
+  import WarningDialog from 'components/WarningDialog.vue'
+  import ScannerDialog from 'components/ScannerDialog.vue'
+  import OfSelector from 'components/OfSelector.vue'
+  import ProductList from 'components/ProductList.vue'
+  import ActionBar from 'components/ActionBar.vue'
   
   export default {
     name: 'ProductPage',

@@ -71,7 +71,7 @@
   </template>
   
   <script>
-  import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+  import { ref, computed, onBeforeUnmount, watch } from 'vue'
   import Quagga from 'quagga'
   
   export default {

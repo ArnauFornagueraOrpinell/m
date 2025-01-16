@@ -1,5 +1,5 @@
 <template>
-    <q-dialog v-model="modelValue">
+    <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
       <q-card class="warning-dialog">
         <q-card-section class="row items-center">
           <q-icon name="warning" color="warning" size="24px" />

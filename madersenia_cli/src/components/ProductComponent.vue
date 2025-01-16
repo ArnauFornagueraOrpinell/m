@@ -239,7 +239,7 @@ export default {
       isCollapsed.value = !isCollapsed.value;
     }
 
-    const handleCardClick = (event) => {
+    const handleCardClick = () => {
       isSelected.value = !isSelected.value;
       if (isSelected.value) {
         emit('selected', props.id);

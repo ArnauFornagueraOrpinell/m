@@ -56,7 +56,7 @@
   </template>
   
   <script>
-  import { ref, computed } from 'vue'
+  import { computed } from 'vue'
   import PaletCard from './PaletCard.vue'
   
   export default {
@@ -140,34 +140,3 @@
   }
   </style>
   
-  <docs>
-  # ProductList
-  
-  Lista de palets y productos con funcionalidades de selección y gestión.
-  
-  ## Props
-  - `palets` (Array, requerido): Lista de palets a mostrar
-  - `selectedPalet` (Number): Índice del palet seleccionado
-  - `selectedProducts` (Array): Lista de productos seleccionados
-  - `loading` (Boolean): Estado de carga de la lista
-  
-  ## Eventos
-  - `palet-click`: Se emite cuando se hace clic en un palet
-  - `product-click`: Se emite cuando se hace clic en un producto
-  - `add-product`: Se emite cuando se quiere añadir un producto
-  - `delete-palet`: Se emite cuando se quiere eliminar un palet
-  
-  ## Ejemplo de uso
-  ```vue
-  <product-list
-    :palets="palets"
-    :selected-palet="selectedPaletIndex"
-    :selected-products="selectedProducts"
-    :loading="isLoading"
-    @palet-click="handlePaletClick"
-    @product-click="handleProductClick"
-    @add-product="handleAddProduct"
-    @delete-palet="handleDeletePalet"
-  />
-  ```
-  </docs>

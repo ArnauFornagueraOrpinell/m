@@ -26,7 +26,8 @@
           >
             <q-item-section>
               <ProductComponent
-                v-model="palet.products[index]"
+                :model-value="palet.products[index]"
+                @update:model-value="$emit('update:product', { index, value: $event })"
                 :id="getProductId(product)"
                 :class="{ 'selected': selectedProducts.includes(product) }"
                 @click.stop="$emit('product-click', product)"
