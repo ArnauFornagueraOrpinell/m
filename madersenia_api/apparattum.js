@@ -1,7 +1,34 @@
 const express = require('express');
 const router = express.Router();
+require('dotenv').config();
 
-import { CUSTOM_TAB_SCHEMA, customConnStr, TAB_PRODUCT_NAME, TAB_PACKING_NAME, TAB_PICKING_NAME } from '.';
+
+
+const CUSTOM_DATABASE = process.env.CUSTOM_DATABASE;
+const CUSTOM_HOSTNAME = process.env.CUSTOM_DB_HOSTNAME;
+const CUSTOM_UID = process.env.CUSTOM_DB_UID;
+const CUSTOM_PWD = process.env.CUSTOM_DB_PWD;
+const CUSTOM_TAB_SCHEMA = process.env.CUSTOM_TAB_SCHEMA;
+
+const TAB_PRODUCT_NAME = process.env.TAB_PRODUCT_NAME;
+const TAB_PACKING_NAME = process.env.TAB_PACKING_NAME;
+const TAB_PICKING_NAME = process.env.TAB_PICKING_NAME;
+const TAB_BARCODE_NAME = process.env.TAB_BARCODE_NAME;
+const VIEW_NAME = process.env.VIEW_NAME;
+const NODE_PORT = process.env.NODE_PORT;
+const DB_PORT = process.env.DB_PORT;
+
+const customConnStr = `DATABASE=${CUSTOM_DATABASE};` +
+`HOSTNAME=${CUSTOM_HOSTNAME};` +
+`UID=${CUSTOM_UID};` +
+`PWD=${CUSTOM_PWD};` +
+`PORT=${DB_PORT};` +
+`PROTOCOL=TCPIP;` +
+`AUTHENTICATION=SERVER;` +  // Especificar autenticación
+`CONNECTTIMEOUT=30;` +      // Timeout de conexión en segundos
+`QUERYTIMEOUT=180;` +       // Timeout de consultas
+`CURRENTSCHEMA=${CUSTOM_TAB_SCHEMA};`; // Schema por defecto
+
 
 
 app.get('/init', async (req, res) => {
@@ -176,7 +203,7 @@ app.post('/add-picking', (req, res) => {
       let pickingData = req.body;
       console.log("Attempting to connect: " + customConnStr);
       conn = ibmdb.openSync(customConnStr);
-      console.log("Connected to: " + DATABASE);
+      console.log("Connected to: " +  CUSTOM_DATABASE);
   
       // Iniciar una transacción
       conn.beginTransactionSync();
@@ -272,7 +299,7 @@ app.get('/get-pickings', (req, res) => {
     try {
       console.log("Attempting to connect: " + customConnStr);
       conn = ibmdb.openSync(customConnStr);
-      console.log("Connected to: " + DATABASE);
+      console.log("Connected to: " +  CUSTOM_DATABASE);
   
       let query = `
         SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
@@ -307,12 +334,12 @@ app.get('/delete-picking:id', (req, res) => {
   });
   
 //   app.get('/get-pickings', (req, res) => {
-//     // Get pickings from the database, return a json with pickings + packings + products
+//     // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
 //     let conn;
 //     try {
 //       console.log("Attempting to connect: " + connStr);
 //       conn = ibmdb.openSync(connStr);
-//       console.log("Connected to: " + DATABASE);
+//       console.log("Connected to: " +  CUSTOM_DATABASE);
   
 //       let query = `
 //         SELECT * FROM ${TAB_SCHEMA}.${TAB_PICKING_NAME} 

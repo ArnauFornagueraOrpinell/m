@@ -28,26 +28,26 @@ const httpsServer = https.createServer(credentials, app);
 const EXAMPLE_BARCODE = '4907874901004-01-01-205';
 let READED_BARCODES = []; 
 
-export const DATABASE = process.env.DATABASE;
-export const HOSTNAME = process.env.DB_HOSTNAME;
-export const UID = process.env.DB_UID;
-export const PWD = process.env.DB_PWD;
-export const TAB_SCHEMA = process.env.TAB_SCHEMA;
+  const DATABASE = process.env.DATABASE;
+  const HOSTNAME = process.env.DB_HOSTNAME;
+  const UID = process.env.DB_UID;
+  const PWD = process.env.DB_PWD;
+  const TAB_SCHEMA = process.env.TAB_SCHEMA;
 
 
-export const CUSTOM_DATABASE = process.env.CUSTOM_DATABASE;
-export const CUSTOM_HOSTNAME = process.env.CUSTOM_DB_HOSTNAME;
-export const CUSTOM_UID = process.env.CUSTOM_DB_UID;
-export const CUSTOM_PWD = process.env.CUSTOM_DB_PWD;
-export const CUSTOM_TAB_SCHEMA = process.env.CUSTOM_TAB_SCHEMA;
+  const CUSTOM_DATABASE = process.env.CUSTOM_DATABASE;
+  const CUSTOM_HOSTNAME = process.env.CUSTOM_DB_HOSTNAME;
+  const CUSTOM_UID = process.env.CUSTOM_DB_UID;
+  const CUSTOM_PWD = process.env.CUSTOM_DB_PWD;
+  const CUSTOM_TAB_SCHEMA = process.env.CUSTOM_TAB_SCHEMA;
 
-export const TAB_PRODUCT_NAME = process.env.TAB_PRODUCT_NAME;
-export const TAB_PACKING_NAME = process.env.TAB_PACKING_NAME;
-export const TAB_PICKING_NAME = process.env.TAB_PICKING_NAME;
-export const TAB_BARCODE_NAME = process.env.TAB_BARCODE_NAME;
-export const VIEW_NAME = process.env.VIEW_NAME;
-export const NODE_PORT = process.env.NODE_PORT;
-export const DB_PORT = process.env.DB_PORT;
+  const TAB_PRODUCT_NAME = process.env.TAB_PRODUCT_NAME;
+  const TAB_PACKING_NAME = process.env.TAB_PACKING_NAME;
+  const TAB_PICKING_NAME = process.env.TAB_PICKING_NAME;
+  const TAB_BARCODE_NAME = process.env.TAB_BARCODE_NAME;
+  const VIEW_NAME = process.env.VIEW_NAME;
+  const NODE_PORT = process.env.NODE_PORT;
+  const DB_PORT = process.env.DB_PORT;
 
 const schema_settings = `CREATE SCHEMA ${TAB_SCHEMA}`;
 // Exercici_OF Clase_OF Series_OF Num_doc_of Codi_Producte Descripcio Tipus embalatge (PeÃ§a 00 moble es 01) Codi_personal Nom_personal Largo Ancho Grueso MP1 MP1_Descripcio Ubicacio 1 Ubicacio 2 Ubicacio 3 Quantitat
@@ -146,7 +146,7 @@ const view_settings = `
   JOIN ${TAB_SCHEMA}.${TAB_BARCODE_NAME} ON ${TAB_SCHEMA}.${TAB_BARCODE_NAME}.PRODUCT_ID = ${TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
   `;
 
-export const connStr = `DATABASE=${DATABASE};` +
+  const connStr = `DATABASE=${DATABASE};` +
   `HOSTNAME=${HOSTNAME};` +
   `UID=${UID};` +
   `PWD=${PWD};` +
@@ -157,7 +157,7 @@ export const connStr = `DATABASE=${DATABASE};` +
   `QUERYTIMEOUT=180;` +       // Timeout de consultas
   `CURRENTSCHEMA=${TAB_SCHEMA};`; // Schema por defecto
 
-export const customConnStr = `DATABASE=${CUSTOM_DATABASE};` +
+  const customConnStr = `DATABASE=${CUSTOM_DATABASE};` +
   `HOSTNAME=${CUSTOM_HOSTNAME};` +
   `UID=${UID};` +
   `PWD=${PWD};` +
@@ -179,7 +179,7 @@ httpsServer.listen(NODE_PORT, () => {
 })
 
 // OK// Función helper para ejecutar queries de forma asíncrona
-export const executeQuery = (conn, query) => {
+  const executeQuery = (conn, query) => {
   return new Promise((resolve, reject) => {
     conn.query(query, (err, result) => {
       if (err) {
@@ -193,7 +193,7 @@ export const executeQuery = (conn, query) => {
 };
 
 // Función helper para ejecutar queries en secuencia
-export const executeQueriesInSequence = async (conn, queries) => {
+  const executeQueriesInSequence = async (conn, queries) => {
   for (const query of queries) {
     try {
       await executeQuery(conn, query);

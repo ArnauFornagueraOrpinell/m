@@ -1,7 +1,32 @@
 const express = require('express');
 const router = express.Router();
+require('dotenv').config();
 
-import { connStr, DATABASE, VIEW_NAME } from '.';
+
+const DATABASE = process.env.DATABASE;
+const HOSTNAME = process.env.DB_HOSTNAME;
+const UID = process.env.DB_UID;
+const PWD = process.env.DB_PWD;
+const TAB_SCHEMA = process.env.TAB_SCHEMA;
+
+const TAB_PRODUCT_NAME = process.env.TAB_PRODUCT_NAME;
+const TAB_PACKING_NAME = process.env.TAB_PACKING_NAME;
+const TAB_PICKING_NAME = process.env.TAB_PICKING_NAME;
+const TAB_BARCODE_NAME = process.env.TAB_BARCODE_NAME;
+const VIEW_NAME = process.env.VIEW_NAME;
+const NODE_PORT = process.env.NODE_PORT;
+const DB_PORT = process.env.DB_PORT;
+
+const connStr = `DATABASE=${DATABASE};` +
+`HOSTNAME=${HOSTNAME};` +
+`UID=${UID};` +
+`PWD=${PWD};` +
+`PORT=${DB_PORT};` +
+`PROTOCOL=TCPIP;` +
+`AUTHENTICATION=SERVER;` +  // Especificar autenticación
+`CONNECTTIMEOUT=30;` +      // Timeout de conexión en segundos
+`QUERYTIMEOUT=180;` +       // Timeout de consultas
+`CURRENTSCHEMA=${TAB_SCHEMA};`; // Schema por defecto
 
 app.get('/get-columns', (req, res) => {
     let conn;
