@@ -16,7 +16,7 @@
       class="bg-primary text-white product-header"
       :class="{ 'collapsed': isCollapsed }"
     >
-      <div class="row items-center q-col-gutter-md">
+      <div class="row items-center q-pa-sm">
         <!-- Toggle collapse button -->
         <div class="col-auto">
           <q-btn
@@ -28,15 +28,15 @@
           />
         </div>
         <div class="col">
-          <div class="row q-col-gutter-md items-center">
-            <div class="col-12 col-sm-6">
-              <div class="text-h6">Producto #{{ model.CODI_PRODUCTE }}</div>
-              <div class="text-subtitle2" v-if="!isCollapsed">Ref: {{ model.PRODUCT_ID }}</div>
+          <div class="row items-center justify-between">
+            <div class="col-grow">
+              <div class="text-h6 q-my-none">Producto #{{ model.CODI_PRODUCTE }}</div>
+              <div class="text-subtitle2 q-my-none" v-if="!isCollapsed">Ref: {{ model.PRODUCT_ID }}</div>
             </div>
-            <div class="col-12 col-sm-6 text-right" v-if="!isCollapsed">
+            <div class="col-auto" v-if="!isCollapsed">
               <q-badge 
                 :color="editable ? 'positive' : 'grey'" 
-                class="q-pa-sm"
+                class="q-pa-sm q-mr-sm"
               >
                 {{ editable ? 'Modo Edición' : 'Solo Lectura' }}
               </q-badge>
@@ -312,8 +312,13 @@ export default {
 }
 
 .collapsed .product-header {
-  margin-bottom: -1px;
+  margin: 0;
   border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.text-h6 {
+  line-height: 1.2;
+  font-size: 1.15rem;
 }
 
 .product-card:not(.collapsed) .product-header {
