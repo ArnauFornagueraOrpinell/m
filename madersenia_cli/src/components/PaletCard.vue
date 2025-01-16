@@ -3,6 +3,7 @@
       :id="paletId" 
       class="palet-card q-ma-md q-mt-lg"
       :class="{ 'selected': isSelected }"
+      @click="handleCardClick"
     >
       <!-- Header siempre visible -->
       <div class="palet-header">
@@ -16,7 +17,7 @@
               @click.stop="toggleExpand"
             />
           </q-item-section>
-          <q-item-section @click="handleCardClick">
+          <q-item-section>
             <q-item-label class="text-h6">
               {{ paletTitle }}
             </q-item-label>
@@ -37,7 +38,7 @@
   
       <!-- Contenido expandible -->
       <q-slide-transition>
-        <div v-show="isExpanded">
+        <div v-show="isExpanded" @click.stop>
           <q-separator />
           <q-card-section class="products-section">
             <q-list>

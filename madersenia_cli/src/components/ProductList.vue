@@ -10,14 +10,14 @@
           :key="`palet-${index}`"
           :palet="palet"
           :palet-index="index"
-          :is-selected="selectedPaletIndexes.includes(index)"
+          :is-selected="selectedPalet === index"
           :selected-products="selectedProducts"
           @click="handlePaletClick(index)"
           @product-click="$emit('product-click', $event)"
           @add-product="$emit('add-product', index)"
         >
-          <template #actions v-if="selectedPaletIndexes.includes(index)">
-            <div class="row q-gutter-sm justify-end">
+          <template #actions v-if="selectedPalet === index">
+            <div class="row q-gutter-sm justify-end q-px-sm">
               <q-btn
                 flat
                 round
@@ -32,7 +32,7 @@
                 round
                 color="negative"
                 icon="delete"
-                @click.stop="$emit('delete-palet', index)"
+                @click.stop="handleDeletePalet(index)"
               >
                 <q-tooltip>Eliminar palet</q-tooltip>
               </q-btn>
@@ -56,7 +56,7 @@
   </template>
   
   <script>
-  import { computed } from 'vue'
+  import { ref } from 'vue'
   import PaletCard from './PaletCard.vue'
   
   export default {
@@ -86,6 +86,7 @@
     },
   
     emits: [
+      'update:selectedPalet',
       'palet-click',
       'product-click',
       'add-product',
@@ -93,18 +94,23 @@
     ],
   
     setup(props, { emit }) {
-      const selectedPaletIndexes = computed(() => {
-        if (props.selectedPalet === null) return []
-        return [props.selectedPalet]
-      })
-  
       const handlePaletClick = (index) => {
-        emit('palet-click', index)
+        // Si el palet clickeado es el que ya está seleccionado, lo deseleccionamos
+        const newSelectedPalet = props.selectedPalet === index ? null : index
+        emit('palet-click', newSelectedPalet)
+      }
+  
+      const handleDeletePalet = (index) => {
+        // Si estamos eliminando el palet seleccionado, deseleccionamos
+        if (props.selectedPalet === index) {
+          emit('palet-click', null)
+        }
+        emit('delete-palet', index)
       }
   
       return {
-        selectedPaletIndexes,
-        handlePaletClick
+        handlePaletClick,
+        handleDeletePalet
       }
     }
   }
@@ -139,4 +145,3 @@
     position: absolute;
   }
   </style>
-  
