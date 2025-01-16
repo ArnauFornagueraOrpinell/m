@@ -28,7 +28,34 @@ const connStr = `DATABASE=${DATABASE};` +
 `QUERYTIMEOUT=180;` +       // Timeout de consultas
 `CURRENTSCHEMA=${TAB_SCHEMA};`; // Schema por defecto
 
-router.get('/get-columns', (req, res) => {
+
+function dbMiddleware(req, res, next) {
+    let conn;
+    try {
+      console.log("Attempting to connect: " + connStr);
+      conn = ibmdb.openSync(connStr);
+      console.log("Connected to: " + DATABASE);
+      req.dbConnection = conn;  // Agregamos la conexión al objeto `req` para usarla en las rutas
+      next();  // Pasar al siguiente middleware o ruta
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    } 
+}
+
+// Cerrar la conexión después de la respuesta o en caso de error
+function dbCloseMiddleware(req, res, next) {
+    if (req.dbConnection) {
+        try {
+          req.dbConnection.closeSync();
+          console.log("Connection closed");
+        } catch (err) {
+          console.log("Error closing connection:", err);
+        }
+    }
+    next();
+}
+
+router.get('/get-columns', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -73,7 +100,7 @@ router.get('/get-columns', (req, res) => {
 
   
 // OK
-router.get('/get-ofs', (req, res) => {
+router.get('/get-ofs', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -108,7 +135,7 @@ router.get('/get-ofs', (req, res) => {
 
   
 // OK
-router.get('/get-product-by-barcode', (req, res) => {
+router.get('/get-product-by-barcode', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -142,7 +169,7 @@ router.get('/get-product-by-barcode', (req, res) => {
   });
 
   
-router.get('/get-last-product', (req, res) => {
+  router.get('/get-last-product', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -178,3 +205,5 @@ router.get('/get-last-product', (req, res) => {
       }
     }
   });
+
+  module.exports = router;

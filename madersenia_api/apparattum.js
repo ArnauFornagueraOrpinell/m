@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+
 require('dotenv').config();
 
 
@@ -102,8 +103,35 @@ const customConnStr = `DATABASE=${CUSTOM_DATABASE};` +
 `CURRENTSCHEMA=${CUSTOM_TAB_SCHEMA};`; // Schema por defecto
 
 
+function dbMiddleware(req, res, next) {
+    let conn;
+    try {
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
+      console.log("Connected to: " + CUSTOM_DATABASE);
+      req.dbConnection = conn;  // Agregamos la conexión al objeto `req` para usarla en las rutas
+      next();  // Pasar al siguiente middleware o ruta
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    } 
+}
 
-router.get('/init', async (req, res) => {
+// Cerrar la conexión después de la respuesta o en caso de error
+function dbCloseMiddleware(req, res, next) {
+    if (req.dbConnection) {
+        try {
+          req.dbConnection.closeSync();
+          console.log("Connection closed");
+        } catch (err) {
+          console.log("Error closing connection:", err);
+        }
+    }
+    next();
+}
+
+
+
+router.get('/init', dbMiddleware, dbCloseMiddleware, async (req, res) => {
     let conn;
     try {
       console.log("Connection string:", customConnStr);
@@ -269,7 +297,7 @@ router.get('/init', async (req, res) => {
 
   
 // REVIEW
-router.post('/add-picking', (req, res) => {
+router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
       let pickingData = req.body;
@@ -365,7 +393,7 @@ router.post('/add-picking', (req, res) => {
 
   
 // REVIEW
-router.get('/get-pickings', (req, res) => {
+router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
     // rerturns pickings with the packings and the products
     let conn;
     try {
@@ -392,20 +420,20 @@ router.get('/get-pickings', (req, res) => {
   
 
   // REVIEW
-router.get('/delete-picking:id', (req, res) => {
+router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => {
     const id = req.params.id;
     pickings = pickings.filter(picking => picking.id !== id);
     res.send('Picking deleted');
   });
   
-  router.post('/update-picking:id', (req, res) => {
+  router.post('/update-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => {
     const id = req.params.id;
     const new_picking = req.body;
     pickings = pickings.map(picking => (picking.id === id ? new_picking : picking));
     res.send('Picking updated');
   });
   
-//   router.get('/get-pickings', (req, res) => {
+//   router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
 //     // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
 //     let conn;
 //     try {
@@ -428,3 +456,5 @@ router.get('/delete-picking:id', (req, res) => {
 //       res.status(500).json({ error: error.message });
 //     }
 //   });
+
+module.exports = router;
