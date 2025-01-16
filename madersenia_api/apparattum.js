@@ -411,28 +411,28 @@ router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => 
     res.send('Picking updated');
   });
   
-//   router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
-//     // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
-//     let conn;
-//     try {
-//       console.log("Attempting to connect: " + connStr);
-//       conn = ibmdb.openSync(connStr);
-//       console.log("Connected to: " +  CUSTOM_DATABASE);
+  router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
+    // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
+    let conn;
+    try {
+      console.log("Attempting to connect: " + connStr);
+      conn = ibmdb.openSync(connStr);
+      console.log("Connected to: " +  CUSTOM_DATABASE);
   
-//       let query = `
-//         SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} 
-//         JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.id_packing = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.id_packing
-//         JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.id_product = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.product_id
-//       `;
+      let query = `
+        SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} 
+        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.id_packing = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.id_packing
+        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.id_product = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.product_id
+      `;
   
-//       const data = conn.querySync(query);
-//       console.log("Data in view:", data);
+      const data = conn.querySync(query);
+      console.log("Data in view:", data);
   
-//       res.status(200).json(data);
-//     } catch (error) {
-//       console.log("Error getting pickings:", error);
-//       res.status(500).json({ error: error.message });
-//     }
-//   });
+      res.status(200).json(data);
+    } catch (error) {
+      console.log("Error getting pickings:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
 module.exports = router;
