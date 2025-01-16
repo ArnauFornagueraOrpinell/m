@@ -4,7 +4,7 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Escanear Código de Barras</div>
           <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
+          <q-btn icon="close" flat round dense v-close-popup @click="handleClose" />
         </q-card-section>
   
         <q-card-section>
@@ -19,6 +19,7 @@
             label="Código de Barras"
             filled
             class="q-mt-md"
+            @update:model-value="handleManualInput"
           >
             <template v-slot:append>
               <q-btn
@@ -26,7 +27,7 @@
                 dense
                 flat
                 icon="clear"
-                @click="localBarcode = ''"
+                @click="clearBarcode"
                 v-if="localBarcode"
               />
             </template>
@@ -56,7 +57,7 @@
             flat
             label="Cancelar"
             color="grey-7"
-            v-close-popup
+            @click="handleClose"
           />
           <q-btn
             unelevated
@@ -95,6 +96,13 @@
         get: () => props.modelValue,
         set: (value) => emit('update:modelValue', value)
       })
+
+      const handleManualInput = (value) => {
+        if (value && !scannedCodes.value.includes(value)) {
+          scannedCodes.value.push(value)
+          emit('barcode-detected', value)
+        }
+      }
   
       const initScanner = () => {
         Quagga.init({
@@ -122,36 +130,43 @@
   
       const handleDetection = (result) => {
         const code = result.codeResult.code
-        if (isValidBarcode(code) && !scannedCodes.value.includes(code)) {
-          scannedCodes.value.push(code)
+        if (code && code.length >= 20 && barcodeRegex.test(code)) {
+          if (!scannedCodes.value.includes(code)) {
+            scannedCodes.value.push(code)
+          }
           localBarcode.value = code
           emit('barcode-detected', code)
         }
       }
   
-      const isValidBarcode = (code) => {
-        return code.length >= 20 && barcodeRegex.test(code)
-      }
-  
       const selectCode = (code) => {
         localBarcode.value = code
+        emit('barcode-detected', code)
       }
   
-      const confirmBarcode = () => {
-        emit('confirm', localBarcode.value)
+      const clearBarcode = () => {
+        localBarcode.value = ''
+        emit('barcode-detected', '')
+      }
+
+      const handleClose = () => {
+        clearBarcode()
         dialogModel.value = false
       }
   
-      // Lifecycle hooks
+      const confirmBarcode = () => {
+        if (localBarcode.value) {
+          emit('confirm', localBarcode.value)
+          dialogModel.value = false
+        }
+      }
+  
       watch(() => props.modelValue, (newVal) => {
         if (newVal) {
-          // Reset estado cuando se abre el diálogo
-          localBarcode.value = ''
+          clearBarcode()
           scannedCodes.value = []
-          // Iniciar scanner después de que el diálogo esté visible
           setTimeout(initScanner, 100)
         } else {
-          // Detener scanner cuando se cierra el diálogo
           Quagga.stop()
         }
       })
@@ -165,7 +180,10 @@
         localBarcode,
         scannedCodes,
         selectCode,
-        confirmBarcode
+        confirmBarcode,
+        handleManualInput,
+        clearBarcode,
+        handleClose
       }
     }
   }
