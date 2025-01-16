@@ -31,7 +31,7 @@ const customConnStr = `DATABASE=${CUSTOM_DATABASE};` +
 
 
 
-app.get('/init', async (req, res) => {
+router.get('/init', async (req, res) => {
     let conn;
     try {
       console.log("Connection string:", customConnStr);
@@ -197,7 +197,7 @@ app.get('/init', async (req, res) => {
 
   
 // REVIEW
-app.post('/add-picking', (req, res) => {
+router.post('/add-picking', (req, res) => {
     let conn;
     try {
       let pickingData = req.body;
@@ -293,7 +293,7 @@ app.post('/add-picking', (req, res) => {
 
   
 // REVIEW
-app.get('/get-pickings', (req, res) => {
+router.get('/get-pickings', (req, res) => {
     // rerturns pickings with the packings and the products
     let conn;
     try {
@@ -320,20 +320,20 @@ app.get('/get-pickings', (req, res) => {
   
 
   // REVIEW
-app.get('/delete-picking:id', (req, res) => {
+router.get('/delete-picking:id', (req, res) => {
     const id = req.params.id;
     pickings = pickings.filter(picking => picking.id !== id);
     res.send('Picking deleted');
   });
   
-  app.post('/update-picking:id', (req, res) => {
+  router.post('/update-picking:id', (req, res) => {
     const id = req.params.id;
     const new_picking = req.body;
     pickings = pickings.map(picking => (picking.id === id ? new_picking : picking));
     res.send('Picking updated');
   });
   
-//   app.get('/get-pickings', (req, res) => {
+//   router.get('/get-pickings', (req, res) => {
 //     // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
 //     let conn;
 //     try {

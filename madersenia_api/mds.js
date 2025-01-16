@@ -28,7 +28,7 @@ const connStr = `DATABASE=${DATABASE};` +
 `QUERYTIMEOUT=180;` +       // Timeout de consultas
 `CURRENTSCHEMA=${TAB_SCHEMA};`; // Schema por defecto
 
-app.get('/get-columns', (req, res) => {
+router.get('/get-columns', (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -73,7 +73,7 @@ app.get('/get-columns', (req, res) => {
 
   
 // OK
-app.get('/get-ofs', (req, res) => {
+router.get('/get-ofs', (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -108,7 +108,7 @@ app.get('/get-ofs', (req, res) => {
 
   
 // OK
-app.get('/get-product-by-barcode', (req, res) => {
+router.get('/get-product-by-barcode', (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
@@ -142,7 +142,7 @@ app.get('/get-product-by-barcode', (req, res) => {
   });
 
   
-app.get('/get-last-product', (req, res) => {
+router.get('/get-last-product', (req, res) => {
     let conn;
     try {
       console.log("Attempting to connect: " + connStr);
