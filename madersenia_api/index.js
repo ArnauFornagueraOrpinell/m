@@ -49,7 +49,6 @@ let READED_BARCODES = [];
   const NODE_PORT = process.env.NODE_PORT;
   const DB_PORT = process.env.DB_PORT;
 
-const schema_settings = `CREATE SCHEMA ${TAB_SCHEMA}`;
 // Exercici_OF Clase_OF Series_OF Num_doc_of Codi_Producte Descripcio Tipus embalatge (PeÃ§a 00 moble es 01) Codi_personal Nom_personal Largo Ancho Grueso MP1 MP1_Descripcio Ubicacio 1 Ubicacio 2 Ubicacio 3 Quantitat
 
 

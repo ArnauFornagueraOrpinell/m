@@ -22,7 +22,7 @@
               {{ paletTitle }}
             </q-item-label>
             <q-item-label caption>
-              OF: {{ palet.of_group }}
+              OF: {{ palet.OF_GROUP }}
             </q-item-label>
           </q-item-section>
           <q-item-section side>
@@ -126,7 +126,7 @@
       },
       paletTitle() {
         const paletNum = this.paletIndex + 1
-        const ofNum = this.palet.NUM_DOCUMENT_OF?.toUpperCase() || this.palet.of_group
+        const ofNum = this.palet.NUM_DOCUMENT_OF?.toUpperCase() || this.palet.OF_GROUP
         const location = this.palet.products[0]?.UBICACIO_3?.toUpperCase() || ''
         return `PALET #${paletNum}-${ofNum}${location ? '-' + location : ''}`
       }
