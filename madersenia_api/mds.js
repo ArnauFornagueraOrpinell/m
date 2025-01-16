@@ -16,6 +16,7 @@ const TAB_BARCODE_NAME = process.env.TAB_BARCODE_NAME;
 const VIEW_NAME = process.env.VIEW_NAME;
 const NODE_PORT = process.env.NODE_PORT;
 const DB_PORT = process.env.DB_PORT;
+const ibmdb = require('ibm_db');
 
 const connStr = `DATABASE=${DATABASE};` +
 `HOSTNAME=${HOSTNAME};` +
