@@ -1,3 +1,5 @@
+# ProductComponent.vue
+
 <template>
   <q-card 
     class="product-card q-ma-md" 
@@ -17,7 +19,6 @@
       :class="{ 'collapsed': isCollapsed }"
     >
       <div class="row items-center q-pa-sm">
-        <!-- Toggle collapse button -->
         <div class="col-auto">
           <q-btn
             flat
@@ -36,22 +37,10 @@
             <div class="col-auto row items-center" v-if="!isCollapsed">
               <q-badge 
                 :color="editable ? 'positive' : 'grey'" 
-                class="q-pa-sm q-mr-sm"
+                class="q-pa-sm"
               >
                 {{ editable ? 'Modo Edición' : 'Solo Lectura' }}
               </q-badge>
-              <q-btn
-                v-if="deletable"
-                flat
-                round
-                dense
-                color="negative"
-                icon="delete"
-                class="q-ml-sm"
-                @click.stop="confirmDelete"
-              >
-                <q-tooltip>Eliminar producto</q-tooltip>
-              </q-btn>
             </div>
           </div>
         </div>
@@ -67,7 +56,7 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="model.CODI_PRODUCTE"
-                @input="updateValue('CODI_PRODUCTE')"
+                @update:model-value="handleInputChange('CODI_PRODUCTE', $event)"
                 type="number"
                 label="CODI_PRODUCTE"
                 dense
@@ -77,7 +66,7 @@
               />
               <q-input
                 v-model="model.PRODUCT_ID"
-                @input="updateValue('PRODUCT_ID')"
+                @update:model-value="handleInputChange('PRODUCT_ID', $event)"
                 label="Referencia"
                 dense
                 outlined
@@ -90,7 +79,7 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="model.DESCRIPCIO"
-                @input="updateValue('DESCRIPCIO')"
+                @update:model-value="handleInputChange('DESCRIPCIO', $event)"
                 label="Descripción"
                 type="textarea"
                 dense
@@ -109,7 +98,7 @@
                 <div class="col-12 col-sm-4">
                   <q-input
                     v-model="model.ANCHO"
-                    @input="updateValue('ANCHO')"
+                    @update:model-value="handleInputChange('ANCHO', $event)"
                     type="number"
                     label="Ancho"
                     dense
@@ -125,7 +114,7 @@
                 <div class="col-12 col-sm-4">
                   <q-input
                     v-model="model.LARGO"
-                    @input="updateValue('LARGO')"
+                    @update:model-value="handleInputChange('LARGO', $event)"
                     type="number"
                     label="Largo"
                     dense
@@ -141,7 +130,7 @@
                 <div class="col-12 col-sm-4">
                   <q-input
                     v-model="model.GRUESO"
-                    @input="updateValue('GRUESO')"
+                    @update:model-value="handleInputChange('GRUESO', $event)"
                     type="number"
                     label="Grueso"
                     dense
@@ -166,7 +155,7 @@
                 <div class="col-12 col-sm-6">
                   <q-input
                     v-model="model.TIPUS_EMBALATGE"
-                    @input="updateValue('TIPUS_EMBALATGE')"
+                    @update:model-value="handleInputChange('TIPUS_EMBALATGE', $event)"
                     label="Tipus Embalatge"
                     dense
                     outlined
@@ -177,7 +166,7 @@
                 <div class="col-12 col-sm-6">
                   <q-input
                     v-model="model.UBICACIO_1"
-                    @input="updateValue('UBICACIO_1')"
+                    @update:model-value="handleInputChange('UBICACIO_1', $event)"
                     label="Edificio"
                     dense
                     outlined
@@ -188,7 +177,7 @@
                 <div class="col-12 col-sm-6">
                   <q-input
                     v-model="model.UBICACIO_2"
-                    @input="updateValue('UBICACIO_2')"
+                    @update:model-value="handleInputChange('UBICACIO_2', $event)"
                     label="Planta"
                     dense
                     outlined
@@ -199,7 +188,7 @@
                 <div class="col-12 col-sm-6">
                   <q-input
                     v-model="model.UBICACIO_3"
-                    @input="updateValue('UBICACIO_3')"
+                    @update:model-value="handleInputChange('UBICACIO_3', $event)"
                     label="Habitación"
                     dense
                     outlined
@@ -213,29 +202,11 @@
         </q-card-section>
       </div>
     </q-slide-transition>
-
-    <!-- Diálogo de confirmación de eliminación -->
-    <q-dialog v-model="showDeleteDialog" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm">¿Está seguro de que desea eliminar este producto?</span>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="primary" v-close-popup />
-          <q-btn flat label="Eliminar" color="negative" @click="deleteProduct" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-card>
 </template>
 
 <script>
 import { ref, watch } from 'vue';
-import { useQuasar } from 'quasar';
-
-const API_URL = 'https://192.168.0.197:3002'; // Base URL for API calls
 
 export default {
   props: {
@@ -244,13 +215,8 @@ export default {
       required: false,
       default: false
     },
-    deletable: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
     id: {
-      type: Number,
+      type: [Number, String],
       required: true
     },
     modelValue: {
@@ -258,23 +224,27 @@ export default {
       required: true
     }
   },
-  emits: ['update:modelValue', 'selected', 'deselected', 'deleted'],
+  
+  emits: ['update:modelValue', 'selected', 'deselected'],
+  
   setup(props, { emit }) {
-    const $q = useQuasar();
-    const model = ref(props.modelValue);
+    const model = ref({ ...props.modelValue });
     const isCollapsed = ref(false);
     const isSelected = ref(false);
-    const showDeleteDialog = ref(false);
 
-    const updateValue = (key) => {
+    const handleInputChange = (key, value) => {
       if (props.editable) {
-        emit('update:modelValue', { ...model.value, [key]: model.value[key] });
+        model.value = {
+          ...model.value,
+          [key]: value
+        };
+        emit('update:modelValue', model.value);
       }
-    }
+    };
 
     const toggleCollapse = () => {
       isCollapsed.value = !isCollapsed.value;
-    }
+    };
 
     const handleCardClick = () => {
       isSelected.value = !isSelected.value;
@@ -283,59 +253,25 @@ export default {
       } else {
         emit('deselected', props.id);
       }
-    }
-
-    const confirmDelete = () => {
-      showDeleteDialog.value = true;
-    }
-
-    const deleteProduct = async () => {
-      try {
-        const response = await fetch(`${API_URL}/delete-product/${model.value.PRODUCT_ID}`, {
-          method: 'DELETE'
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Error al eliminar el producto');
-        }
-
-        $q.notify({
-          type: 'positive',
-          message: 'Producto eliminado correctamente'
-        });
-        emit('deleted', props.id);
-      } catch (error) {
-        $q.notify({
-          type: 'negative',
-          message: 'Error al eliminar el producto',
-          caption: error.message
-        });
-      }
-    }
+    };
 
     watch(() => props.modelValue, (newVal) => {
-      model.value = newVal;
+      model.value = { ...newVal };
     });
 
     return {
       model,
       isCollapsed,
       isSelected,
-      showDeleteDialog,
-      updateValue,
+      handleInputChange,
       toggleCollapse,
-      handleCardClick,
-      confirmDelete,
-      deleteProduct
-    }
+      handleCardClick
+    };
   }
 };
 </script>
 
 <style scoped>
-/* Los estilos se mantienen exactamente igual */
 .product-card {
   transition: all 0.3s ease;
   border: 0;
