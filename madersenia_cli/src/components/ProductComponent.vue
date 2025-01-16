@@ -2,9 +2,14 @@
   <q-card 
     class="product-card q-ma-md" 
     :id="id"
-    :class="{'editable': editable, 'collapsed': isCollapsed}"
+    :class="{
+      'editable': editable, 
+      'collapsed': isCollapsed,
+      'selected': isSelected
+    }"
     flat
     bordered
+    @click="handleCardClick"
   >
     <!-- Header con información principal -->
     <div 
@@ -19,7 +24,7 @@
             round
             dense
             :icon="isCollapsed ? 'arrow_right' : 'arrow_drop_down'"
-            @click="toggleCollapse"
+            @click.stop="toggleCollapse"
           />
         </div>
         <div class="col">
@@ -218,10 +223,11 @@ export default {
       required: true
     }
   },
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'selected', 'deselected'],
   setup(props, { emit }) {
     const model = ref(props.modelValue);
     const isCollapsed = ref(false);
+    const isSelected = ref(false);
 
     const updateValue = (key) => {
       if (props.editable) {
@@ -233,6 +239,15 @@ export default {
       isCollapsed.value = !isCollapsed.value;
     }
 
+    const handleCardClick = (event) => {
+      isSelected.value = !isSelected.value;
+      if (isSelected.value) {
+        emit('selected', props.id);
+      } else {
+        emit('deselected', props.id);
+      }
+    }
+
     watch(() => props.modelValue, (newVal) => {
       model.value = newVal;
     });
@@ -240,8 +255,10 @@ export default {
     return {
       model,
       isCollapsed,
+      isSelected,
       updateValue,
-      toggleCollapse
+      toggleCollapse,
+      handleCardClick
     }
   }
 };
@@ -251,6 +268,12 @@ export default {
 .product-card {
   transition: all 0.3s ease;
   border: 0;
+  cursor: pointer;
+}
+
+.product-card.selected {
+  outline: 2px solid var(--q-primary);
+  background-color: rgba(var(--q-primary), 0.05);
 }
 
 .product-card.editable {
@@ -262,6 +285,7 @@ export default {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Rest of the styles remain the same */
 @media (max-width: 600px) {
   .product-card {
     margin: 8px !important;
@@ -270,6 +294,7 @@ export default {
   .text-right {
     text-align: left !important;
     margin-top: 8px;
+    margin-right: 8px;
   }
 }
 
@@ -287,21 +312,11 @@ export default {
   padding: 0;
 }
 
-/* Ajuste para que solo se vea la barra azul cuando está colapsado */
 .collapsed .product-header {
   margin-bottom: -1px;
   border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-/* Estilo específico para el texto cuando está colapsado */
-.collapsed .text-h6 {
-  font-size: 1rem;
-  margin: 0;
-  line-height: 1.2;
-}
-
-/* Estilos para el contenido expandido */
 .product-card:not(.collapsed) .product-header {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
-</style>
