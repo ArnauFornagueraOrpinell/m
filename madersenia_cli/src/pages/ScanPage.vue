@@ -115,7 +115,7 @@
         }
   
         palets.value.push({
-          name: '',
+          NAME: '',
           OF_GROUP: selectedOf.value.name,
           products: [],
           id: palets.value.length

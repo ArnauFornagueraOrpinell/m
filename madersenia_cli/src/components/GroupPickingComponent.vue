@@ -16,7 +16,7 @@
       <PickingComponent
         v-for="(picking, index) in pickings || []"
         :key="index"
-        :name="picking.name"
+        :name="picking.NAME"
         :ref_piece="picking.ref_piece"
         :description="picking.description"
         :width="picking.width"
