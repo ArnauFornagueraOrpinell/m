@@ -274,99 +274,130 @@ router.get('/init', dbMiddleware, dbCloseMiddleware, async (req, res) => {
 router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
-      let pickingData = req.body;
-      console.log("Attempting to connect: " + customConnStr);
-      conn = ibmdb.openSync(customConnStr);
-      console.log("Connected to: " +  CUSTOM_DATABASE);
-  
-      // Iniciar una transacción
-      conn.beginTransactionSync();
-  
-      // Insertar el picking
-      let query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} (NAME) VALUES (?)`;
-      conn.querySync(query, [pickingData[0]?.NAME || 'Unnamed Picking']);
-  
-      // Obtener el ID del picking recién insertado
-      query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
-      const [pickingIdResult] = conn.querySync(query);
-      const pickingId = pickingIdResult.ID;
-  
-      for (const packing of pickingData) {
-        // if packing is empty, skip
-        if (packing === null || packing === undefined || packing.length === 0) {
-            continue;
-        }
-        // Insertar el packing
-        query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} (NAME, OF_GROUP) VALUES (?, ?)`;
-        conn.querySync(query, [packing?.NAME || 'Unnamed Packing', packing?.OF_GROUP || '']);
-  
-        // Obtener el ID del packing recién insertado
+        let pickingData = req.body;
+        console.log("Attempting to connect: " + customConnStr);
+        conn = ibmdb.openSync(customConnStr);
+        console.log("Connected to: " + CUSTOM_DATABASE);
+
+        // Start transaction
+        conn.beginTransactionSync();
+
+        // Insert picking
+        let query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} (NAME) VALUES (?)`;
+        conn.querySync(query, [pickingData[0]?.NAME || 'Unnamed Picking']);
+
+        // Get picking ID
         query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
-        const [packingIdResult] = conn.querySync(query);
-        const packingId = packingIdResult.ID;
-  
-        // Insertar la relación picking-packing
-        query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING (PICKING_ID, PACKING_ID) VALUES (?, ?)`;
-        conn.querySync(query, [pickingId, packingId]);
-  
-        // Insertar los productos del packing
-        for (const product of packing?.products) {
-          // Verificar si el producto ya existe
-          query = `SELECT PRODUCT_ID FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} WHERE CODI_PRODUCTE = ?`;
-          const productResult = conn.querySync(query, [product.CODI_PRODUCTE]);
-          
-          let productId;
-          if (productResult.length === 0) {
-            // Si el producto no existe, lo insertamos
-            query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} 
-                     (CODI_PRODUCTE, DESCRIPCIO, TIPUS_EMBALATGE, CODI_PERSONAL, NOM_PERSONAL,
-                      LARGO, ANCHO, GRUESO, MP1, MP1_DESCRIPCIO, UBICACIO_1, UBICACIO_2, UBICACIO_3, QUANTITAT)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;  
-            conn.querySync(query, [
-              product.CODI_PRODUCTE, product.DESCRIPCIO, product.TIPUS_EMBALATGE, product.CODI_PERSONAL,
-              product.NOM_PERSONAL, product.LARGO, product.ANCHO, product.GRUESO, product.MP1,
-              product.MP1_DESCRIPCIO, product.UBICACIO_1, product.UBICACIO_2, product.UBICACIO_3, product.QUANTITAT
-            ]);
-  
-            // Obtener el ID del producto recién insertado
+        const [pickingIdResult] = conn.querySync(query);
+        const pickingId = pickingIdResult.ID;
+
+        for (const packing of pickingData) {
+            // Skip empty packings
+            if (!packing || Object.keys(packing).length === 0) {
+                continue;
+            }
+
+            // Insert packing
+            query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} (NAME, OF_GROUP) VALUES (?, ?)`;
+            conn.querySync(query, [packing?.NAME || 'Unnamed Packing', packing?.OF_GROUP || '']);
+
+            // Get packing ID
             query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
-            const [productIdResult] = conn.querySync(query);
-            productId = productIdResult.ID;
-          } else {
-            productId = productResult[0].PRODUCT_ID;
-          }
-  
-          // Insertar la relación packing-producto
-          query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT (PACKING_ID, PRODUCT_ID, QUANTITY) VALUES (?, ?, ?)`;
-          conn.querySync(query, [packingId, productId, product.QUANTITAT]);
+            const [packingIdResult] = conn.querySync(query);
+            const packingId = packingIdResult.ID;
+
+            // Insert picking-packing relation
+            query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING (PICKING_ID, PACKING_ID) VALUES (?, ?)`;
+            conn.querySync(query, [pickingId, packingId]);
+
+            // Handle products
+            if (packing.products && Array.isArray(packing.products)) {
+                for (const product of packing.products) {
+                    if (!product) continue;
+
+                    let productId;
+                    
+                    // Check if product exists
+                    const checkProduct = conn.querySync(
+                        `SELECT PRODUCT_ID FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} WHERE CODI_PRODUCTE = ?`,
+                        [product.CODI_PRODUCTE]
+                    );
+
+                    if (checkProduct.length === 0) {
+                        // Product doesn't exist, insert it
+                        const insertProductQuery = `
+                            INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} (
+                                CODI_PRODUCTE, DESCRIPCIO, TIPUS_EMBALATGE, 
+                                CODI_PERSONAL, NOM_PERSONAL, LARGO, 
+                                ANCHO, GRUESO, MP1, MP1_DESCRIPCIO, 
+                                UBICACIO_1, UBICACIO_2, UBICACIO_3, QUANTITAT
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        `;
+
+                        conn.querySync(insertProductQuery, [
+                            product.CODI_PRODUCTE || '',
+                            product.DESCRIPCIO || '',
+                            product.TIPUS_EMBALATGE || '',
+                            product.CODI_PERSONAL || '',
+                            product.NOM_PERSONAL || '',
+                            product.LARGO || 0,
+                            product.ANCHO || 0,
+                            product.GRUESO || 0,
+                            product.MP1 || '',
+                            product.MP1_DESCRIPCIO || '',
+                            product.UBICACIO_1 || '',
+                            product.UBICACIO_2 || '',
+                            product.UBICACIO_3 || '',
+                            product.QUANTITAT || 0
+                        ]);
+
+                        // Get the new product ID
+                        const [newProductResult] = conn.querySync(
+                            `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`
+                        );
+                        productId = newProductResult.ID;
+                    } else {
+                        productId = checkProduct[0].PRODUCT_ID;
+                    }
+
+                    // Insert packing-product relation with quantity
+                    const quantity = typeof product.QUANTITAT === 'number' ? product.QUANTITAT : 0;
+                    conn.querySync(
+                        `INSERT INTO ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT (PACKING_ID, PRODUCT_ID, QUANTITY) VALUES (?, ?, ?)`,
+                        [packingId, productId, quantity]
+                    );
+                }
+            }
         }
-      }
-  
-      // Confirmar la transacción
-      conn.commitTransactionSync();
-  
-      res.status(200).json({ message: "Picking added successfully", pickingId: pickingId });
+
+        // Commit transaction
+        conn.commitTransactionSync();
+        res.status(200).json({ 
+            message: "Picking and all related data added successfully", 
+            pickingId: pickingId 
+        });
+
     } catch (error) {
-      console.log("Error in add-picking process:", error);
-      if (conn) {
-        try {
-          conn.rollbackTransactionSync();
-        } catch (rollbackError) {
-          console.log("Error rolling back transaction:", rollbackError);
+        console.error("Error in add-picking process:", error);
+        if (conn) {
+            try {
+                conn.rollbackTransactionSync();
+            } catch (rollbackError) {
+                console.error("Error rolling back transaction:", rollbackError);
+            }
         }
-      }
-      res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     } finally {
-      if (conn) {
-        try {
-          conn.closeSync();
-          console.log("Connection closed");
-        } catch (err) {
-          console.log("Error closing connection:", err);
+        if (conn) {
+            try {
+                conn.closeSync();
+                console.log("Connection closed");
+            } catch (err) {
+                console.error("Error closing connection:", err);
+            }
         }
-      }
     }
-  });
+});
 
 
   // REVIEW
