@@ -285,7 +285,6 @@ export default {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Rest of the styles remain the same */
 @media (max-width: 600px) {
   .product-card {
     margin: 8px !important;
@@ -320,3 +319,4 @@ export default {
 .product-card:not(.collapsed) .product-header {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
+</style>
