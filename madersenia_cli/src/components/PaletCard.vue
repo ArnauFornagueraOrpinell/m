@@ -3,7 +3,6 @@
       :id="paletId" 
       class="palet-card q-ma-md q-mt-lg"
       :class="{ 'selected': isSelected }"
-      @click="handleCardClick"
     >
       <!-- Header siempre visible -->
       <div class="palet-header">
@@ -15,10 +14,9 @@
               dense
               :icon="isExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right'"
               @click.stop="toggleExpand"
-              class="expand-button"
             />
           </q-item-section>
-          <q-item-section>
+          <q-item-section @click="handleCardClick">
             <q-item-label class="text-h6">
               {{ paletTitle }}
             </q-item-label>
@@ -32,6 +30,9 @@
             </q-chip>
           </q-item-section>
         </q-item>
+        
+        <!-- Slot para acciones -->
+        <slot name="actions"></slot>
       </div>
   
       <!-- Contenido expandible -->
@@ -103,15 +104,13 @@
     setup(props, { emit }) {
       const isExpanded = ref(false)
   
-      const toggleExpand = () => {
+      const toggleExpand = (event) => {
+        event.stopPropagation()
         isExpanded.value = !isExpanded.value
       }
   
-      const handleCardClick = (event) => {
-        // Verificar si el clic fue en el botón de expandir
-        if (!event.target.closest('.expand-button')) {
-          emit('click')
-        }
+      const handleCardClick = () => {
+        emit('click')
       }
   
       return {
@@ -154,13 +153,6 @@
       cursor: pointer;
       &:hover {
         background: rgba(0,0,0,0.03);
-      }
-    }
-  
-    .expand-button {
-      z-index: 1;
-      &:hover {
-        background: rgba(0,0,0,0.1);
       }
     }
   
