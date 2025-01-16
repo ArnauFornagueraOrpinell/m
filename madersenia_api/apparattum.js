@@ -21,7 +21,6 @@ const CUSTOM_VIEW_NAME = process.env.CUSTOM_VIEW_NAME;
 const NODE_PORT = process.env.NODE_PORT;
 const DB_PORT = process.env.DB_PORT;
 
-const schema_settings = `CREATE SCHEMA ${CUSTOM_TAB_SCHEMA}`;
 
 const table1_settings = `
 CREATE TABLE ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} (
@@ -75,24 +74,6 @@ CREATE TABLE ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING (
 );`;
 
 
-// Exercici_OF Clase_OF Series_OF Num_doc_of Codi_Producte Descripcio Tipus embalatge (PeÃ§a 00 moble es 01) Codi_personal Nom_personal Largo Ancho Grueso MP1 MP1_Descripcio Ubicacio 1 Ubicacio 2 Ubicacio 3 Quantitat
-const table_barcode_settings = `
-CREATE TABLE ${CUSTOM_TAB_SCHEMA}.${TAB_BARCODE_NAME} (
-  BARCODE VARCHAR(100) NOT NULL PRIMARY KEY,
-  PRODUCT_ID BIGINT NOT NULL,
-  EXCERCICI_OF VARCHAR(100) NOT NULL,
-  CLASE_OF VARCHAR(100) NOT NULL,
-  SERIES_OF VARCHAR(100) NOT NULL,
-  NUM_DOC_OF VARCHAR(100) NOT NULL,
-  FOREIGN KEY (PRODUCT_ID) REFERENCES ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}(PRODUCT_ID)
-);`;
-
-// The view is a join of the barcode and the product table
-const view_settings = `
-  CREATE VIEW ${CUSTOM_TAB_SCHEMA}.${CUSTOM_VIEW_NAME} AS
-  SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}
-  JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_BARCODE_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_BARCODE_NAME}.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
-  `;
 
 const customConnStr = `DATABASE=${CUSTOM_DATABASE};` +
 `HOSTNAME=${CUSTOM_HOSTNAME};` +
@@ -175,20 +156,20 @@ router.get('/init', dbMiddleware, dbCloseMiddleware, async (req, res) => {
       });
   
       // Create schema only if it doesn't exist
-      if (!schemaExists) {
-        await new Promise((resolve, reject) => {
-          conn.query(schema_settings, (err, result) => {
-            if (err) {
-              reject(err);
-            } else {
-              console.log("Schema created successfully");
-              resolve(result);
-            }
-          });
-        });
-      } else {
-        console.log("Schema already exists, continuing with table creation");
-      }
+    //   if (!schemaExists) {
+    //     await new Promise((resolve, reject) => {
+    //       conn.query(schema_settings, (err, result) => {
+    //         if (err) {
+    //           reject(err);
+    //         } else {
+    //           console.log("Schema created successfully");
+    //           resolve(result);
+    //         }
+    //       });
+    //     });
+    //   } else {
+    //     console.log("Schema already exists, continuing with table creation");
+    //   }
   
       // Array of initialization queries for tables and views
       const tableQueries = [
@@ -217,16 +198,6 @@ router.get('/init', dbMiddleware, dbCloseMiddleware, async (req, res) => {
           create: table5_settings,
           name: "Picking-Packing relation table"
         },
-        {
-          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = '${TAB_BARCODE_NAME}'`,
-          create: table_barcode_settings,
-          name: "Barcode table"
-        },
-        {
-          check: `SELECT VIEWNAME FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND VIEWNAME = '${CUSTOM_VIEW_NAME}'`,
-          create: view_settings,
-          name: "Products view"
-        }
       ];
   
       // Execute table creation queries
