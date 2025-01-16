@@ -2,7 +2,9 @@
   <q-card 
     class="product-card q-ma-md" 
     :id="id"
-    :class="{'editable': editable}"
+    :class="{'editable': editable, 'collapsed': isCollapsed}"
+    flat
+    bordered
   >
     <!-- Header con información principal -->
     <div 
@@ -272,16 +274,31 @@ export default {
 }
 
 .product-header {
-  padding: 16px;
+  padding: 12px 16px;
   transition: all 0.3s ease;
 }
 
-.product-header.collapsed {
-  padding: 8px 16px;
+.product-card {
+  overflow: hidden;
 }
 
-/* Eliminar el padding por defecto de q-card cuando está colapsado */
-.product-card:has(.product-header.collapsed) {
+.product-card.collapsed {
+  background: transparent;
+}
+
+.product-card.collapsed :deep(.q-card__section) {
   padding: 0;
+}
+
+/* Ajuste para que solo se vea la barra azul cuando está colapsado */
+.collapsed .product-header {
+  margin-bottom: -1px;
+}
+
+/* Estilo específico para el texto cuando está colapsado */
+.collapsed .text-h6 {
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.2;
 }
 </style>
