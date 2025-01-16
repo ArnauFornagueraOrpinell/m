@@ -415,8 +415,8 @@ router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => 
     // Get pickings from the  CUSTOM_DATABASE, return a json with pickings + packings + products
     let conn;
     try {
-      console.log("Attempting to connect: " + connStr);
-      conn = ibmdb.openSync(connStr);
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
       console.log("Connected to: " +  CUSTOM_DATABASE);
   
       let query = `
