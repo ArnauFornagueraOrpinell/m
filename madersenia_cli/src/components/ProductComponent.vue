@@ -5,7 +5,10 @@
     :class="{'editable': editable}"
   >
     <!-- Header con información principal -->
-    <q-card-section class="bg-primary text-white">
+    <div 
+      class="bg-primary text-white product-header"
+      :class="{ 'collapsed': isCollapsed }"
+    >
       <div class="row items-center q-col-gutter-md">
         <!-- Toggle collapse button -->
         <div class="col-auto">
@@ -21,9 +24,9 @@
           <div class="row q-col-gutter-md items-center">
             <div class="col-12 col-sm-6">
               <div class="text-h6">Producto #{{ model.CODI_PRODUCTE }}</div>
-              <div class="text-subtitle2">Ref: {{ model.PRODUCT_ID }}</div>
+              <div class="text-subtitle2" v-if="!isCollapsed">Ref: {{ model.PRODUCT_ID }}</div>
             </div>
-            <div class="col-12 col-sm-6 text-right">
+            <div class="col-12 col-sm-6 text-right" v-if="!isCollapsed">
               <q-badge 
                 :color="editable ? 'positive' : 'grey'" 
                 class="q-pa-sm"
@@ -34,7 +37,7 @@
           </div>
         </div>
       </div>
-    </q-card-section>
+    </div>
 
     <!-- Contenido principal - Collapsible -->
     <q-slide-transition>
@@ -245,6 +248,7 @@ export default {
 <style scoped>
 .product-card {
   transition: all 0.3s ease;
+  border: 0;
 }
 
 .product-card.editable {
@@ -265,5 +269,19 @@ export default {
     text-align: left !important;
     margin-top: 8px;
   }
+}
+
+.product-header {
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.product-header.collapsed {
+  padding: 8px 16px;
+}
+
+/* Eliminar el padding por defecto de q-card cuando está colapsado */
+.product-card:has(.product-header.collapsed) {
+  padding: 0;
 }
 </style>
