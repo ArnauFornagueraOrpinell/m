@@ -124,7 +124,8 @@
     .empty-state {
       border: 2px dashed #e0e0e0;
       border-radius: 8px;
-      margin: 16px;
+      margin: 0px;
+      margin-top: 30px;
     }
   }
   

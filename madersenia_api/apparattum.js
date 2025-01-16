@@ -1,0 +1,331 @@
+const express = require('express');
+const router = express.Router();
+
+import { CUSTOM_TAB_SCHEMA, customConnStr, TAB_PRODUCT_NAME, TAB_PACKING_NAME, TAB_PICKING_NAME } from '.';
+
+
+app.get('/init', async (req, res) => {
+    let conn;
+    try {
+      console.log("Connection string:", customConnStr);
+      
+      conn = await new Promise((resolve, reject) => {
+        console.log("Initiating connection...");
+        
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout after 30 seconds'));
+        }, 30000);
+        
+        ibmdb.open(customConnStr, (err, connection) => {
+          clearTimeout(timeout);
+          if (err) {
+            console.log("Connection error details:", {
+              message: err.message,
+              sqlcode: err.sqlcode,
+              state: err.state
+            });
+            reject(err);
+          } else {
+            console.log("Connection successful!");
+            resolve(connection);
+          }
+        });
+      });
+  
+      // First check if schema exists
+      const checkSchema = `SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE SCHEMANAME = '${CUSTOM_TAB_SCHEMA}'`;
+      const schemaExists = await new Promise((resolve, reject) => {
+        conn.query(checkSchema, (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result.length > 0);
+          }
+        });
+      });
+  
+      // Create schema only if it doesn't exist
+      if (!schemaExists) {
+        await new Promise((resolve, reject) => {
+          conn.query(schema_settings, (err, result) => {
+            if (err) {
+              reject(err);
+            } else {
+              console.log("Schema created successfully");
+              resolve(result);
+            }
+          });
+        });
+      } else {
+        console.log("Schema already exists, continuing with table creation");
+      }
+  
+      // Array of initialization queries for tables and views
+      const tableQueries = [
+        {
+          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = '${TAB_PRODUCT_NAME}'`,
+          create: table1_settings,
+          name: "Product table"
+        },
+        {
+          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = '${TAB_PACKING_NAME}'`,
+          create: table2_settings,
+          name: "Packing table"
+        },
+        {
+          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = 'PACKING_PRODUCT'`,
+          create: table3_settings,
+          name: "Packing-Product relation table"
+        },
+        {
+          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = '${TAB_PICKING_NAME}'`,
+          create: table4_settings,
+          name: "Picking table"
+        },
+        {
+          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = 'PICKING_PACKING'`,
+          create: table5_settings,
+          name: "Picking-Packing relation table"
+        },
+        {
+          check: `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND TABNAME = '${TAB_BARCODE_NAME}'`,
+          create: table_barcode_settings,
+          name: "Barcode table"
+        },
+        {
+          check: `SELECT VIEWNAME FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '${CUSTOM_TAB_SCHEMA}' AND VIEWNAME = '${CUSTOM_VIEW_NAME}'`,
+          create: view_settings,
+          name: "Products view"
+        }
+      ];
+  
+      // Execute table creation queries
+      for (const query of tableQueries) {
+        try {
+          // Check if table exists
+          const exists = await new Promise((resolve, reject) => {
+            conn.query(query.check, (err, result) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(result.length > 0);
+              }
+            });
+          });
+  
+          if (!exists) {
+            await new Promise((resolve, reject) => {
+              conn.query(query.create, (err, result) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  console.log(`${query.name} created successfully`);
+                  resolve(result);
+                }
+              });
+            });
+          } else {
+            console.log(`${query.name} already exists, skipping`);
+          }
+        } catch (error) {
+          console.error(`Error processing ${query.name}:`, error);
+          throw error;
+        }
+      }
+  
+      res.status(200).json({ 
+        message: "Database initialization completed successfully",
+        details: "All required database objects are ready"
+      });
+  
+    } catch (error) {
+      console.error("Error in init process:", {
+        message: error.message,
+        sqlcode: error.sqlcode,
+        state: error.state,
+        stack: error.stack
+      });
+      
+      res.status(500).json({ 
+        error: "Database initialization failed",
+        details: error.message
+      });
+      
+    } finally {
+      if (conn) {
+        try {
+          await new Promise((resolve) => {
+            conn.close((err) => {
+              if (err) console.error("Error closing connection:", err);
+              resolve();
+            });
+          });
+          console.log("Connection closed");
+        } catch (err) {
+          console.error("Error closing connection:", err);
+        }
+      }
+    }
+  });
+
+  
+// REVIEW
+app.post('/add-picking', (req, res) => {
+    let conn;
+    try {
+      let pickingData = req.body;
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
+      console.log("Connected to: " + DATABASE);
+  
+      // Iniciar una transacción
+      conn.beginTransactionSync();
+  
+      // Insertar el picking
+      let query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} (NAME) VALUES (?)`;
+      conn.querySync(query, [pickingData[0].name || 'Unnamed Picking']);
+  
+      // Obtener el ID del picking recién insertado
+      query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
+      const [pickingIdResult] = conn.querySync(query);
+      const pickingId = pickingIdResult.ID;
+  
+      for (const packing of pickingData) {
+        // Insertar el packing
+        query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} (NAME, OF_GROUP) VALUES (?, ?)`;
+        conn.querySync(query, [packing.name || 'Unnamed Packing', packing.of_group]);
+  
+        // Obtener el ID del packing recién insertado
+        query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
+        const [packingIdResult] = conn.querySync(query);
+        const packingId = packingIdResult.ID;
+  
+        // Insertar la relación picking-packing
+        query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING (PICKING_ID, PACKING_ID) VALUES (?, ?)`;
+        conn.querySync(query, [pickingId, packingId]);
+  
+        // Insertar los productos del packing
+        for (const product of packing.products) {
+          // Verificar si el producto ya existe
+          query = `SELECT PRODUCT_ID FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} WHERE CODI_PRODUCTE = ?`;
+          const productResult = conn.querySync(query, [product.CODI_PRODUCTE]);
+          
+          let productId;
+          if (productResult.length === 0) {
+            // Si el producto no existe, lo insertamos
+            query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} 
+                     (CODI_PRODUCTE, DESCRIPCIO, TIPUS_EMBALATGE, CODI_PERSONAL, NOM_PERSONAL,
+                      LARGO, ANCHO, GRUESO, MP1, MP1_DESCRIPCIO, UBICACIO_1, UBICACIO_2, UBICACIO_3, QUANTITAT)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;  
+            conn.querySync(query, [
+              product.CODI_PRODUCTE, product.DESCRIPCIO, product.TIPUS_EMBALATGE, product.CODI_PERSONAL,
+              product.NOM_PERSONAL, product.LARGO, product.ANCHO, product.GRUESO, product.MP1,
+              product.MP1_DESCRIPCIO, product.UBICACIO_1, product.UBICACIO_2, product.UBICACIO_3, product.QUANTITAT
+            ]);
+  
+            // Obtener el ID del producto recién insertado
+            query = `SELECT IDENTITY_VAL_LOCAL() AS ID FROM SYSIBM.SYSDUMMY1`;
+            const [productIdResult] = conn.querySync(query);
+            productId = productIdResult.ID;
+          } else {
+            productId = productResult[0].PRODUCT_ID;
+          }
+  
+          // Insertar la relación packing-producto
+          query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT (PACKING_ID, PRODUCT_ID, QUANTITY) VALUES (?, ?, ?)`;
+          conn.querySync(query, [packingId, productId, product.QUANTITAT]);
+        }
+      }
+  
+      // Confirmar la transacción
+      conn.commitTransactionSync();
+  
+      res.status(200).json({ message: "Picking added successfully", pickingId: pickingId });
+    } catch (error) {
+      console.log("Error in add-picking process:", error);
+      if (conn) {
+        try {
+          conn.rollbackTransactionSync();
+        } catch (rollbackError) {
+          console.log("Error rolling back transaction:", rollbackError);
+        }
+      }
+      res.status(500).json({ error: error.message });
+    } finally {
+      if (conn) {
+        try {
+          conn.closeSync();
+          console.log("Connection closed");
+        } catch (err) {
+          console.log("Error closing connection:", err);
+        }
+      }
+    }
+  });
+
+
+  
+// REVIEW
+app.get('/get-pickings', (req, res) => {
+    // rerturns pickings with the packings and the products
+    let conn;
+    try {
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
+      console.log("Connected to: " + DATABASE);
+  
+      let query = `
+        SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
+        JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.PICKING_ID = ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PICKING_ID
+        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID
+        JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PACKING_ID
+        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
+      `;
+      const data = conn.querySync(query);
+      console.log("Data in view:", data);
+  
+      res.status(200).json(data);
+    } catch (error) {
+      console.log("Error getting pickings:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+
+  // REVIEW
+app.get('/delete-picking:id', (req, res) => {
+    const id = req.params.id;
+    pickings = pickings.filter(picking => picking.id !== id);
+    res.send('Picking deleted');
+  });
+  
+  app.post('/update-picking:id', (req, res) => {
+    const id = req.params.id;
+    const new_picking = req.body;
+    pickings = pickings.map(picking => (picking.id === id ? new_picking : picking));
+    res.send('Picking updated');
+  });
+  
+//   app.get('/get-pickings', (req, res) => {
+//     // Get pickings from the database, return a json with pickings + packings + products
+//     let conn;
+//     try {
+//       console.log("Attempting to connect: " + connStr);
+//       conn = ibmdb.openSync(connStr);
+//       console.log("Connected to: " + DATABASE);
+  
+//       let query = `
+//         SELECT * FROM ${TAB_SCHEMA}.${TAB_PICKING_NAME} 
+//         JOIN ${TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${TAB_SCHEMA}.${TAB_PICKING_NAME}.id_packing = ${TAB_SCHEMA}.${TAB_PACKING_NAME}.id_packing
+//         JOIN ${TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${TAB_SCHEMA}.${TAB_PACKING_NAME}.id_product = ${TAB_SCHEMA}.${TAB_PRODUCT_NAME}.product_id
+//       `;
+  
+//       const data = conn.querySync(query);
+//       console.log("Data in view:", data);
+  
+//       res.status(200).json(data);
+//     } catch (error) {
+//       console.log("Error getting pickings:", error);
+//       res.status(500).json({ error: error.message });
+//     }
+//   });
