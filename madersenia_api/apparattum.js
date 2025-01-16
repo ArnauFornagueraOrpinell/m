@@ -292,6 +292,10 @@ router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
       const pickingId = pickingIdResult.ID;
   
       for (const packing of pickingData) {
+        // if packing is empty, skip
+        if (packing === null || packing === undefined || packing.length === 0) {
+            continue;
+        }
         // Insertar el packing
         query = `INSERT INTO ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} (NAME, OF_GROUP) VALUES (?, ?)`;
         conn.querySync(query, [packing?.NAME || 'Unnamed Packing', packing?.OF_GROUP || '']);
