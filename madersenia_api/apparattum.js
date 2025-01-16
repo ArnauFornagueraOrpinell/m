@@ -371,30 +371,30 @@ router.post('/add-picking', dbMiddleware, dbCloseMiddleware, (req, res) => {
 
   
 // REVIEW
-router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
-    // rerturns pickings with the packings and the products
-    let conn;
-    try {
-      console.log("Attempting to connect: " + customConnStr);
-      conn = ibmdb.openSync(customConnStr);
-      console.log("Connected to: " +  CUSTOM_DATABASE);
+// router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
+//     // rerturns pickings with the packings and the products
+//     let conn;
+//     try {
+//       console.log("Attempting to connect: " + customConnStr);
+//       conn = ibmdb.openSync(customConnStr);
+//       console.log("Connected to: " +  CUSTOM_DATABASE);
   
-      let query = `
-        SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
-        JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.PICKING_ID = ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PICKING_ID
-        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID
-        JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PACKING_ID
-        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
-      `;
-      const data = conn.querySync(query);
-      console.log("Data in view:", data);
+//       let query = `
+//         SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
+//         JOIN ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.PICKING_ID = ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PICKING_ID
+//         JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.PICKING_PACKING.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID
+//         JOIN ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PACKING_ID
+//         JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.PACKING_PRODUCT.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
+//       `;
+//       const data = conn.querySync(query);
+//       console.log("Data in view:", data);
   
-      res.status(200).json(data);
-    } catch (error) {
-      console.log("Error getting pickings:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
+//       res.status(200).json(data);
+//     } catch (error) {
+//       console.log("Error getting pickings:", error);
+//       res.status(500).json({ error: error.message });
+//     }
+//   });
   
 
   // REVIEW
@@ -421,8 +421,8 @@ router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => 
   
       let query = `
         SELECT * FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME} 
-        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.id_packing = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.id_packing
-        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.id_product = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.product_id
+        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}.PACKING_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PACKING_ID
+        JOIN ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} ON ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}.PRODUCT_ID = ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}.PRODUCT_ID
       `;
   
       const data = conn.querySync(query);
