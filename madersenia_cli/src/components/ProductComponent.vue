@@ -33,7 +33,7 @@
               <div class="text-h6 q-my-none">Producto #{{ model.CODI_PRODUCTE }}</div>
               <div class="text-subtitle2 q-my-none" v-if="!isCollapsed">Ref: {{ model.PRODUCT_ID }}</div>
             </div>
-            <div class="col-auto" v-if="!isCollapsed" class="row items-center">
+            <div class="col-auto row items-center" v-if="!isCollapsed">
               <q-badge 
                 :color="editable ? 'positive' : 'grey'" 
                 class="q-pa-sm q-mr-sm"
@@ -233,8 +233,9 @@
 
 <script>
 import { ref, watch } from 'vue';
-import { api } from 'boot/axios';
 import { useQuasar } from 'quasar';
+
+const API_URL = 'https://192.168.0.197:3002'; // Base URL for API calls
 
 export default {
   props: {
@@ -290,7 +291,16 @@ export default {
 
     const deleteProduct = async () => {
       try {
-        await api.delete(`/delete-product/${model.value.PRODUCT_ID}`);
+        const response = await fetch(`${API_URL}/delete-product/${model.value.PRODUCT_ID}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al eliminar el producto');
+        }
+
         $q.notify({
           type: 'positive',
           message: 'Producto eliminado correctamente'
@@ -300,7 +310,7 @@ export default {
         $q.notify({
           type: 'negative',
           message: 'Error al eliminar el producto',
-          caption: error.response?.data?.error || error.message
+          caption: error.message
         });
       }
     }
@@ -325,6 +335,7 @@ export default {
 </script>
 
 <style scoped>
+/* Los estilos se mantienen exactamente igual */
 .product-card {
   transition: all 0.3s ease;
   border: 0;

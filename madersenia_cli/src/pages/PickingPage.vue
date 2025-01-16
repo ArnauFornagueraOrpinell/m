@@ -142,213 +142,241 @@
     </q-page>
   </template>
   
-  <script>
-  import { ref, computed } from 'vue'
-  import PackingCard from 'components/PackingCard.vue'
-  import ActionBar from 'components/ActionBar.vue'
-  import { api } from 'boot/axios'
-  import { useQuasar } from 'quasar'
+<script>
+import { ref, computed } from 'vue'
+import PackingCard from 'components/PaletCard.vue'
+import ActionBar from 'components/ActionBar.vue'
+import { useQuasar } from 'quasar'
+
+const PAGE_SIZE = 2
+const API_URL = 'https://192.168.0.197:3002' // Base URL for API calls
+
+export default {
+  name: 'PickingPage',
   
-  const PAGE_SIZE = 2
-  
-  export default {
-    name: 'PickingPage',
+  components: {
+    PackingCard,
+    ActionBar
+  },
+
+  setup() {
+    const $q = useQuasar()
     
-    components: {
-      PackingCard,
-      ActionBar
-    },
-  
-    setup() {
-      const $q = useQuasar()
-      
-      // Estado
-      const pickings = ref([])
-      const originalPickings = ref([])
-      const selectedPicking = ref(null)
-      const selectedPacking = ref(null)
-      const selectedProducts = ref([])
-      const actualPage = ref(1)
-      const totalPages = ref(0)
-      const loading = ref(false)
-      const searchQuery = ref('')
-      const showDeleteDialog = ref(false)
-      const pickingToDelete = ref(null)
-  
-      // Computed
-      const getSelectedPackings = computed(() => {
-        if (!selectedPacking.value) return []
-        const [pickingIndex, packingIndex] = selectedPacking.value.split('-')
-        return [[pickingIndex, packingIndex]]
-      })
-  
-      const getTotalPackings = computed(() => {
-        return pickings.value.reduce((total, picking) => total + picking.packings.length, 0)
-      })
-  
-      // Métodos
-      const fetchPickings = async (page) => {
-        loading.value = true
-        try {
-          const response = await api.get(`/page?page=${page}&length=${PAGE_SIZE}`)
-          pickings.value = response.data.data
-          originalPickings.value = JSON.parse(JSON.stringify(response.data.data))
-          totalPages.value = response.data.totalPages
-          actualPage.value = page
-        } catch (error) {
-          console.error('Error fetching pickings:', error)
-          $q.notify({
-            type: 'negative',
-            message: 'Error al cargar los pickings',
-            caption: error.response?.data?.error || error.message
-          })
-        } finally {
-          loading.value = false
+    // Estado (sin cambios)
+    const pickings = ref([])
+    const originalPickings = ref([])
+    const selectedPicking = ref(null)
+    const selectedPacking = ref(null)
+    const selectedProducts = ref([])
+    const actualPage = ref(1)
+    const totalPages = ref(0)
+    const loading = ref(false)
+    const searchQuery = ref('')
+    const showDeleteDialog = ref(false)
+    const pickingToDelete = ref(null)
+
+    // Computed properties se mantienen igual
+    const getSelectedPackings = computed(() => {
+      if (!selectedPacking.value) return []
+      const [pickingIndex, packingIndex] = selectedPacking.value.split('-')
+      return [[pickingIndex, packingIndex]]
+    })
+
+    const getTotalPackings = computed(() => {
+      return pickings.value.reduce((total, picking) => total + picking.packings.length, 0)
+    })
+
+    // Métodos modificados para usar fetch
+    const fetchPickings = async (page) => {
+      loading.value = true
+      try {
+        const response = await fetch(`${API_URL}/page?page=${page}&length=${PAGE_SIZE}`)
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al cargar los pickings')
         }
+
+        pickings.value = data.data
+        originalPickings.value = JSON.parse(JSON.stringify(data.data))
+        totalPages.value = data.totalPages
+        actualPage.value = page
+      } catch (error) {
+        console.error('Error fetching pickings:', error)
+        $q.notify({
+          type: 'negative',
+          message: 'Error al cargar los pickings',
+          caption: error.message
+        })
+      } finally {
+        loading.value = false
       }
-  
-      const getPickingsPage = (page) => {
-        if (page >= 1 && page <= totalPages.value) {
-          fetchPickings(page)
+    }
+
+    const getPickingsPage = (page) => {
+      if (page >= 1 && page <= totalPages.value) {
+        fetchPickings(page)
+      }
+    }
+
+    // Los manejadores de eventos de click se mantienen igual
+    const handlePickingClick = (index) => {
+      selectedPicking.value = selectedPicking.value === index ? null : index
+      selectedPacking.value = null
+      selectedProducts.value = []
+    }
+
+    const handlePackingClick = (pickingIndex, packingIndex) => {
+      const packingId = `${pickingIndex}-${packingIndex}`
+      selectedPacking.value = selectedPacking.value === packingId ? null : packingId
+      selectedProducts.value = []
+    }
+
+    const handleProductClick = (product) => {
+      const index = selectedProducts.value.indexOf(product)
+      if (index === -1) {
+        selectedProducts.value.push(product)
+      } else {
+        selectedProducts.value.splice(index, 1)
+      }
+    }
+
+    const confirmDeletePicking = (picking) => {
+      pickingToDelete.value = picking
+      showDeleteDialog.value = true
+    }
+
+    const deletePicking = async () => {
+      if (!pickingToDelete.value) return
+
+      loading.value = true
+      try {
+        const response = await fetch(`${API_URL}/delete/${pickingToDelete.value.PICKING_ID}`, {
+          method: 'DELETE'
+        })
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al eliminar el picking')
         }
-      }
-  
-      const handlePickingClick = (index) => {
-        selectedPicking.value = selectedPicking.value === index ? null : index
+
+        $q.notify({
+          type: 'positive',
+          message: 'Picking eliminado correctamente'
+        })
+        await fetchPickings(actualPage.value)
+        selectedPicking.value = null
         selectedPacking.value = null
         selectedProducts.value = []
+      } catch (error) {
+        console.error('Error deleting picking:', error)
+        $q.notify({
+          type: 'negative',
+          message: 'Error al eliminar el picking',
+          caption: error.message
+        })
+      } finally {
+        loading.value = false
+        pickingToDelete.value = null
       }
-  
-      const handlePackingClick = (pickingIndex, packingIndex) => {
-        const packingId = `${pickingIndex}-${packingIndex}`
-        selectedPacking.value = selectedPacking.value === packingId ? null : packingId
-        selectedProducts.value = []
-      }
-  
-      const handleProductClick = (product) => {
-        const index = selectedProducts.value.indexOf(product)
-        if (index === -1) {
-          selectedProducts.value.push(product)
-        } else {
-          selectedProducts.value.splice(index, 1)
+    }
+
+    const handlePackingDeleted = async (pickingIndex, packingIndex) => {
+      await fetchPickings(actualPage.value)
+      selectedPacking.value = null
+      selectedProducts.value = []
+    }
+
+    const handleProductDeleted = async (pickingIndex, packingIndex, productIndex) => {
+      await fetchPickings(actualPage.value)
+    }
+
+    const handleConfirm = async () => {
+      loading.value = true
+      try {
+        const response = await fetch(`${API_URL}/save-pickings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(pickings.value)
+        })
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al guardar los cambios')
         }
-      }
-  
-      const confirmDeletePicking = (picking) => {
-        pickingToDelete.value = picking
-        showDeleteDialog.value = true
-      }
-  
-      const deletePicking = async () => {
-        if (!pickingToDelete.value) return
-  
-        loading.value = true
-        try {
-          await api.delete(`/delete/${pickingToDelete.value.PICKING_ID}`)
-          $q.notify({
-            type: 'positive',
-            message: 'Picking eliminado correctamente'
-          })
-          await fetchPickings(actualPage.value)
-          selectedPicking.value = null
-          selectedPacking.value = null
-          selectedProducts.value = []
-        } catch (error) {
-          console.error('Error deleting picking:', error)
-          $q.notify({
-            type: 'negative',
-            message: 'Error al eliminar el picking',
-            caption: error.response?.data?.error || error.message
-          })
-        } finally {
-          loading.value = false
-          pickingToDelete.value = null
-        }
-      }
-  
-      const handlePackingDeleted = async (pickingIndex, packingIndex) => {
+
+        $q.notify({
+          type: 'positive',
+          message: 'Cambios guardados correctamente'
+        })
         await fetchPickings(actualPage.value)
-        selectedPacking.value = null
-        selectedProducts.value = []
-      }
-  
-      const handleProductDeleted = async (pickingIndex, packingIndex, productIndex) => {
-        await fetchPickings(actualPage.value)
-      }
-  
-      const handleConfirm = async () => {
-        loading.value = true
-        try {
-          await api.post('/save-pickings', pickings.value)
-          $q.notify({
-            type: 'positive',
-            message: 'Cambios guardados correctamente'
-          })
-          await fetchPickings(actualPage.value)
-        } catch (error) {
-          console.error('Error saving changes:', error)
-          $q.notify({
-            type: 'negative',
-            message: 'Error al guardar los cambios',
-            caption: error.response?.data?.error || error.message
-          })
-        } finally {
-          loading.value = false
-        }
-      }
-  
-      // Inicialización
-      fetchPickings(1)
-  
-      return {
-        pickings,
-        selectedPicking,
-        selectedPacking,
-        selectedProducts,
-        actualPage,
-        totalPages,
-        loading,
-        searchQuery,
-        showDeleteDialog,
-        getSelectedPackings,
-        getTotalPackings,
-        getPickingsPage,
-        handlePickingClick,
-        handlePackingClick,
-        handleProductClick,
-        handleConfirm,
-        confirmDeletePicking,
-        deletePicking,
-        handlePackingDeleted,
-        handleProductDeleted
+      } catch (error) {
+        console.error('Error saving changes:', error)
+        $q.notify({
+          type: 'negative',
+          message: 'Error al guardar los cambios',
+          caption: error.message
+        })
+      } finally {
+        loading.value = false
       }
     }
-  }
-  </script>
-  
-  <style lang="scss" scoped>
-  .picking-page {
-    padding-bottom: 72px;
-  }
-  
-  .picking-card {
-    transition: all 0.3s ease;
-  
-    &.selected-card {
-      border: 2px solid var(--q-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    // Inicialización
+    fetchPickings(1)
+
+    return {
+      pickings,
+      selectedPicking,
+      selectedPacking,
+      selectedProducts,
+      actualPage,
+      totalPages,
+      loading,
+      searchQuery,
+      showDeleteDialog,
+      getSelectedPackings,
+      getTotalPackings,
+      getPickingsPage,
+      handlePickingClick,
+      handlePackingClick,
+      handleProductClick,
+      handleConfirm,
+      confirmDeletePicking,
+      deletePicking,
+      handlePackingDeleted,
+      handleProductDeleted
     }
-  
-    .picking-header {
-      &:hover {
-        background: rgba(0, 0, 0, 0.03);
-      }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+// Los estilos se mantienen igual
+.picking-page {
+  padding-bottom: 72px;
+}
+
+.picking-card {
+  transition: all 0.3s ease;
+
+  &.selected-card {
+    border: 2px solid var(--q-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .picking-header {
+    &:hover {
+      background: rgba(0, 0, 0, 0.03);
     }
   }
-  
-  .empty-state {
-    border: 2px dashed #e0e0e0;
-    border-radius: 8px;
-    margin: 16px;
-  }
-  </style>
+}
+
+.empty-state {
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  margin: 16px;
+}
+</style>
