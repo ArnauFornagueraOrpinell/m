@@ -1,173 +1,168 @@
-# PickingPage.vue
-
 <template>
-  <q-page class="picking-page q-pa-md">
-    <!-- Toolbar de búsqueda y paginación -->
-    <q-toolbar class="bg-white shadow-1 rounded-borders q-mb-md">
-      <q-btn-group flat>
-        <q-btn
-          flat
-          round
-          icon="chevron_left"
-          :disable="actualPage <= 1"
-          @click="getPickingsPage(actualPage - 1)"
-        />
-        <q-btn flat no-caps>
-          Página {{ actualPage }} de {{ totalPages }}
-        </q-btn>
-        <q-btn
-          flat
-          round
-          icon="chevron_right"
-          :disable="actualPage >= totalPages"
-          @click="getPickingsPage(actualPage + 1)"
-        />
-      </q-btn-group>
-
-      <q-space />
-
-      <q-input
-        v-model="searchQuery"
-        dense
-        outlined
-        placeholder="Buscar..."
-        class="q-ml-md"
-        style="width: 200px"
-      >
-        <template v-slot:append>
-          <q-icon name="search" />
-        </template>
-      </q-input>
-    </q-toolbar>
-
-    <!-- Lista de Pickings -->
-    <div class="picking-list q-gutter-y-md">
-      <q-card
-        v-for="(picking, pickingIndex) in pickings"
-        :key="picking.PICKING_ID"
-        :class="{ 'selected-card': selectedPicking === pickingIndex }"
-        class="picking-card"
-      >
-        <!-- Header del Picking -->
-        <q-card-section
-          class="picking-header cursor-pointer"
-          @click="handlePickingClick(pickingIndex)"
+    <q-page class="picking-page q-pa-md">
+      <!-- Toolbar de búsqueda y paginación -->
+      <q-toolbar class="bg-white shadow-1 rounded-borders q-mb-md">
+        <q-btn-group flat>
+          <q-btn
+            flat
+            round
+            icon="chevron_left"
+            :disable="actualPage <= 1"
+            @click="getPickingsPage(actualPage - 1)"
+          />
+          <q-btn flat no-caps>
+            Página {{ actualPage }} de {{ totalPages }}
+          </q-btn>
+          <q-btn
+            flat
+            round
+            icon="chevron_right"
+            :disable="actualPage >= totalPages"
+            @click="getPickingsPage(actualPage + 1)"
+          />
+        </q-btn-group>
+  
+        <q-space />
+  
+        <q-input
+          v-model="searchQuery"
+          dense
+          outlined
+          placeholder="Buscar..."
+          class="q-ml-md"
+          style="width: 200px"
         >
-          <div class="row items-center no-wrap">
-            <div class="col">
-              <div class="text-h6">ORDEN #{{ picking.PICKING_ID }}</div>
-              <div class="text-caption">
-                Palets: {{ picking.packings.length }}
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </q-toolbar>
+  
+      <!-- Lista de Pickings -->
+      <div class="picking-list q-gutter-y-md">
+        <q-card
+          v-for="(picking, pickingIndex) in pickings"
+          :key="picking.PICKING_ID"
+          :class="{ 'selected-card': selectedPicking === pickingIndex }"
+          class="picking-card"
+        >
+          <!-- Header del Picking -->
+          <q-card-section
+            class="picking-header cursor-pointer"
+            @click="handlePickingClick(pickingIndex)"
+          >
+            <div class="row items-center no-wrap">
+              <div class="col">
+                <div class="text-h6">ORDEN #{{ picking.PICKING_ID }}</div>
+                <div class="text-caption">
+                  Palets: {{ picking.packings.length }}
+                </div>
               </div>
-            </div>
-            <div class="col-auto">
-              <q-btn
-                v-if="selectedPicking === pickingIndex"
-                flat
-                round
-                color="negative"
-                icon="delete"
-                @click.stop="confirmDeletePicking(picking)"
-              >
-                <q-tooltip>Eliminar picking</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                round
-                :icon="selectedPicking === pickingIndex ? 'keyboard_arrow_down' : 'keyboard_arrow_right'"
-              />
-            </div>
-          </div>
-        </q-card-section>
-
-        <!-- Lista de Packings -->
-        <q-slide-transition>
-          <div v-show="selectedPicking === pickingIndex">
-            <q-separator />
-            <q-card-section class="q-pa-none">
-              <div class="q-pa-md q-gutter-y-md">
-                <packing-card
-                  v-for="(packing, packingIndex) in picking.packings"
-                  :key="packingIndex"
-                  :packing="packing"
-                  :packing-index="packingIndex"
-                  :is-selected="selectedPacking === `${pickingIndex}-${packingIndex}`"
-                  :selected-products="selectedProducts"
-                  :editable="true"
-                  :deletable="true"
-                  @click="handlePackingClick(pickingIndex, packingIndex)"
-                  @product-click="handleProductClick"
-                  @update:packing="handlePackingUpdate(pickingIndex, packingIndex, $event)"
-                  @deleted="handlePackingDeleted(pickingIndex, packingIndex)"
-                  @product-deleted="handleProductDeleted(pickingIndex, packingIndex, $event)"
+              <div class="col-auto">
+                <q-btn
+                  v-if="selectedPicking === pickingIndex"
+                  flat
+                  round
+                  color="negative"
+                  icon="delete"
+                  @click.stop="confirmDeletePicking(picking)"
                 >
-                </packing-card>
+                  <q-tooltip>Eliminar picking</q-tooltip>
+                </q-btn>
+                <q-btn
+                  flat
+                  round
+                  :icon="selectedPicking === pickingIndex ? 'keyboard_arrow_down' : 'keyboard_arrow_right'"
+                />
               </div>
-            </q-card-section>
-          </div>
-        </q-slide-transition>
-      </q-card>
-    </div>
-
-    <!-- Estado vacío -->
-    <div v-if="pickings.length === 0" class="empty-state q-pa-xl text-center">
-      <q-icon name="inventory_2" size="4rem" color="grey-5" />
-      <div class="text-h6 text-grey-7 q-mt-md">No hay órdenes disponibles</div>
-    </div>
-
-    <!-- Diálogo de confirmación para eliminar picking -->
-    <q-dialog v-model="showDeleteDialog" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm">¿Está seguro de que desea eliminar este picking y todos sus packings relacionados?</span>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="primary" v-close-popup />
-          <q-btn flat label="Eliminar" color="negative" @click="deletePicking" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- Botón de guardar (solo visible cuando hay cambios) -->
-    <q-page-sticky position="bottom-right" :offset="[18, 18]" v-if="hasChanges">
-      <q-btn
-        fab
-        color="primary"
-        icon="save"
-        @click="handleSave"
-      >
-        <q-tooltip>Guardar cambios</q-tooltip>
-      </q-btn>
-    </q-page-sticky>
-
-    <!-- Loading overlay -->
-    <q-inner-loading :showing="loading">
-      <q-spinner-dots size="50px" color="primary" />
-    </q-inner-loading>
-  </q-page>
-</template>
-
+            </div>
+          </q-card-section>
+  
+          <!-- Lista de Packings -->
+          <q-slide-transition>
+            <div v-show="selectedPicking === pickingIndex">
+              <q-separator />
+              <q-card-section class="q-pa-none">
+                <div class="q-pa-md q-gutter-y-md">
+                  <packing-card
+                    v-for="(packing, packingIndex) in picking.packings"
+                    :key="packingIndex"
+                    :packing="packing"
+                    :packing-index="packingIndex"
+                    :is-selected="selectedPacking === `${pickingIndex}-${packingIndex}`"
+                    :selected-products="selectedProducts"
+                    :editable="true"
+                    :deletable="true"
+                    @click="handlePackingClick(pickingIndex, packingIndex)"
+                    @product-click="handleProductClick"
+                    @deleted="handlePackingDeleted(pickingIndex, packingIndex)"
+                    @product-deleted="handleProductDeleted(pickingIndex, packingIndex, $event)"
+                  >
+                  </packing-card>
+                </div>
+              </q-card-section>
+            </div>
+          </q-slide-transition>
+        </q-card>
+      </div>
+  
+      <!-- Estado vacío -->
+      <div v-if="pickings.length === 0" class="empty-state q-pa-xl text-center">
+        <q-icon name="inventory_2" size="4rem" color="grey-5" />
+        <div class="text-h6 text-grey-7 q-mt-md">No hay órdenes disponibles</div>
+      </div>
+  
+      <!-- Diálogo de confirmación para eliminar picking -->
+      <q-dialog v-model="showDeleteDialog" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="warning" color="negative" text-color="white" />
+            <span class="q-ml-sm">¿Está seguro de que desea eliminar este picking y todos sus packings relacionados?</span>
+          </q-card-section>
+  
+          <q-card-actions align="right">
+            <q-btn flat label="Cancelar" color="primary" v-close-popup />
+            <q-btn flat label="Eliminar" color="negative" @click="deletePicking" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+  
+      <!-- Barra de acciones -->
+      <action-bar
+        :selected-products="selectedProducts"
+        :selected-packings="getSelectedPackings"
+        :total-packings="getTotalPackings"
+        @confirm="handleConfirm"
+      />
+  
+      <!-- Loading overlay -->
+      <q-inner-loading :showing="loading">
+        <q-spinner-dots size="50px" color="primary" />
+      </q-inner-loading>
+    </q-page>
+  </template>
+  
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import PackingCard from 'components/PaletCard.vue'
+import ActionBar from 'components/ActionBar.vue'
 import { useQuasar } from 'quasar'
 
 const PAGE_SIZE = 2
-const API_URL = 'https://192.168.0.197:3002'
+const API_URL = 'https://192.168.0.197:3002' // Base URL for API calls
 
 export default {
   name: 'PickingPage',
   
   components: {
-    PackingCard
+    PackingCard,
+    ActionBar
   },
 
   setup() {
     const $q = useQuasar()
     
-    // Estado
+    // Estado (sin cambios)
     const pickings = ref([])
     const originalPickings = ref([])
     const selectedPicking = ref(null)
@@ -179,9 +174,8 @@ export default {
     const searchQuery = ref('')
     const showDeleteDialog = ref(false)
     const pickingToDelete = ref(null)
-    const hasChanges = ref(false)
 
-    // Computed properties
+    // Computed properties se mantienen igual
     const getSelectedPackings = computed(() => {
       if (!selectedPacking.value) return []
       const [pickingIndex, packingIndex] = selectedPacking.value.split('-')
@@ -192,12 +186,7 @@ export default {
       return pickings.value.reduce((total, picking) => total + picking.packings.length, 0)
     })
 
-    // Check for changes
-    const checkForChanges = () => {
-      hasChanges.value = JSON.stringify(pickings.value) !== JSON.stringify(originalPickings.value)
-    }
-
-    // Métodos
+    // Métodos modificados para usar fetch
     const fetchPickings = async (page) => {
       loading.value = true
       try {
@@ -212,7 +201,6 @@ export default {
         originalPickings.value = JSON.parse(JSON.stringify(data.data))
         totalPages.value = data.totalPages
         actualPage.value = page
-        hasChanges.value = false
       } catch (error) {
         console.error('Error fetching pickings:', error)
         $q.notify({
@@ -231,6 +219,7 @@ export default {
       }
     }
 
+    // Los manejadores de eventos de click se mantienen igual
     const handlePickingClick = (index) => {
       selectedPicking.value = selectedPicking.value === index ? null : index
       selectedPacking.value = null
@@ -250,11 +239,6 @@ export default {
       } else {
         selectedProducts.value.splice(index, 1)
       }
-    }
-
-    const handlePackingUpdate = (pickingIndex, packingIndex, updatedPacking) => {
-      pickings.value[pickingIndex].packings[packingIndex] = updatedPacking
-      checkForChanges()
     }
 
     const confirmDeletePicking = (picking) => {
@@ -307,17 +291,16 @@ export default {
       await fetchPickings(actualPage.value)
     }
 
-    const handleSave = async () => {
+    const handleConfirm = async () => {
       loading.value = true
       try {
-        const response = await fetch(`${API_URL}/save`, {
+        const response = await fetch(`${API_URL}/save-pickings`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(pickings.value)
         })
-        
         const data = await response.json()
 
         if (!response.ok) {
@@ -328,7 +311,6 @@ export default {
           type: 'positive',
           message: 'Cambios guardados correctamente'
         })
-        
         await fetchPickings(actualPage.value)
       } catch (error) {
         console.error('Error saving changes:', error)
@@ -341,11 +323,6 @@ export default {
         loading.value = false
       }
     }
-
-    // Watch para detectar cambios
-    watch(pickings, () => {
-      checkForChanges()
-    }, { deep: true })
 
     // Inicialización
     fetchPickings(1)
@@ -360,25 +337,24 @@ export default {
       loading,
       searchQuery,
       showDeleteDialog,
-      hasChanges,
       getSelectedPackings,
       getTotalPackings,
       getPickingsPage,
       handlePickingClick,
       handlePackingClick,
       handleProductClick,
-      handlePackingUpdate,
+      handleConfirm,
       confirmDeletePicking,
       deletePicking,
       handlePackingDeleted,
-      handleProductDeleted,
-      handleSave
+      handleProductDeleted
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+// Los estilos se mantienen igual
 .picking-page {
   padding-bottom: 72px;
 }

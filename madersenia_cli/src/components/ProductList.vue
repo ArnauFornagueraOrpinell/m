@@ -12,8 +12,6 @@
           :palet-index="index"
           :is-selected="selectedPalet === index"
           :selected-products="selectedProducts"
-          :editable="false"
-          :deletable="true"
           @click="handlePaletClick(index)"
           @product-click="$emit('product-click', $event)"
           @add-product="$emit('add-product', index)"

@@ -105,164 +105,173 @@
       </q-dialog>
     </q-card>
   </template>
-  
-  <script>
-  import { ref } from 'vue'
-  import ProductComponent from './ProductComponent.vue'
-  import { api } from 'boot/axios'
-  import { useQuasar } from 'quasar'
-  
-  export default {
-    name: 'PackingCard',
-    components: {
-      ProductComponent
+<script>
+import { ref } from 'vue'
+import ProductComponent from './ProductComponent.vue'
+import { useQuasar } from 'quasar'
+
+const API_URL = 'https://192.168.0.197:3002' // Base URL for API calls
+
+export default {
+  name: 'PackingCard',
+  components: {
+    ProductComponent
+  },
+  props: {
+    packing: {
+      type: Object,
+      required: true
     },
-    props: {
-      packing: {
-        type: Object,
-        required: true
-      },
-      packingIndex: {
-        type: Number,
-        required: true
-      },
-      isSelected: {
-        type: Boolean,
-        default: false
-      },
-      selectedProducts: {
-        type: Array,
-        default: () => []
-      },
-      editable: {
-        type: Boolean,
-        default: false
-      },
-      deletable: {
-        type: Boolean,
-        default: false
-      }
+    packingIndex: {
+      type: Number,
+      required: true
     },
-    setup(props, { emit }) {
-      const $q = useQuasar()
-      const isExpanded = ref(false)
-      const showDeleteDialog = ref(false)
-  
-      const toggleExpand = (event) => {
-        event.stopPropagation()
-        isExpanded.value = !isExpanded.value
-      }
-  
-      const handleCardClick = () => {
-        emit('click')
-      }
-  
-      const confirmDelete = () => {
-        showDeleteDialog.value = true
-      }
-  
-      const deletePacking = async () => {
-        try {
-          await api.delete(`/delete-packing/${props.packing.PACKING_ID}`)
-          $q.notify({
-            type: 'positive',
-            message: 'Packing eliminado correctamente'
-          })
-          emit('deleted', props.packingIndex)
-        } catch (error) {
-          $q.notify({
-            type: 'negative',
-            message: 'Error al eliminar el packing',
-            caption: error.response?.data?.error || error.message
-          })
+    isSelected: {
+      type: Boolean,
+      default: false
+    },
+    selectedProducts: {
+      type: Array,
+      default: () => []
+    },
+    editable: {
+      type: Boolean,
+      default: false
+    },
+    deletable: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup(props, { emit }) {
+    const $q = useQuasar()
+    const isExpanded = ref(false)
+    const showDeleteDialog = ref(false)
+
+    const toggleExpand = (event) => {
+      event.stopPropagation()
+      isExpanded.value = !isExpanded.value
+    }
+
+    const handleCardClick = () => {
+      emit('click')
+    }
+
+    const confirmDelete = () => {
+      showDeleteDialog.value = true
+    }
+
+    const deletePacking = async () => {
+      try {
+        const response = await fetch(`${API_URL}/delete-packing/${props.packing.PACKING_ID}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al eliminar el packing');
         }
+
+        $q.notify({
+          type: 'positive',
+          message: 'Packing eliminado correctamente'
+        });
+        emit('deleted', props.packingIndex);
+      } catch (error) {
+        $q.notify({
+          type: 'negative',
+          message: 'Error al eliminar el packing',
+          caption: error.message
+        });
       }
-  
-      const handleProductDeleted = (productIndex) => {
-        emit('product-deleted', productIndex)
-      }
-  
-      return {
-        isExpanded,
-        showDeleteDialog,
-        toggleExpand,
-        handleCardClick,
-        confirmDelete,
-        deletePacking,
-        handleProductDeleted
-      }
+    }
+
+    const handleProductDeleted = (productIndex) => {
+      emit('product-deleted', productIndex)
+    }
+
+    return {
+      isExpanded,
+      showDeleteDialog,
+      toggleExpand,
+      handleCardClick,
+      confirmDelete,
+      deletePacking,
+      handleProductDeleted
+    }
+  },
+  computed: {
+    packingId() {
+      return `packing-${this.packingIndex}`
     },
-    computed: {
-      packingId() {
-        return `packing-${this.packingIndex}`
-      },
-      packingTitle() {
-        const packingNum = this.packingIndex + 1
-        const ofNum = this.packing.OF_GROUP?.toUpperCase()
-        const location = this.packing.products[0]?.UBICACIO_3?.toUpperCase() || ''
-        return `PACKING #${packingNum}-${ofNum}${location ? '-' + location : ''}`
-      }
-    },
-    methods: {
-      getProductId(product) {
-        return `#${product.PRODUCT_ID}`
-      }
-    },
-    emits: [
-      'click', 
-      'product-click', 
-      'add-product', 
-      'update:product', 
-      'deleted',
-      'product-deleted'
-    ]
+    packingTitle() {
+      const packingNum = this.packingIndex + 1
+      const ofNum = this.packing.OF_GROUP?.toUpperCase()
+      const location = this.packing.products[0]?.UBICACIO_3?.toUpperCase() || ''
+      return `PACKING #${packingNum}-${ofNum}${location ? '-' + location : ''}`
+    }
+  },
+  methods: {
+    getProductId(product) {
+      return `#${product.PRODUCT_ID}`
+    }
+  },
+  emits: [
+    'click', 
+    'product-click', 
+    'add-product', 
+    'update:product', 
+    'deleted',
+    'product-deleted'
+  ]
+}
+</script>
+
+<style lang="scss" scoped>
+/* Los estilos se mantienen exactamente igual */
+.packing-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  
+  &.selected {
+    border: 2px solid var(--q-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
-  </script>
-  
-  <style lang="scss" scoped>
-  .packing-card {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    
-    &.selected {
-      border: 2px solid var(--q-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  
-    .packing-header {
-      cursor: pointer;
-      &:hover {
-        background: rgba(0,0,0,0.03);
-      }
-    }
-  
-    .add-product-card {
-      background-color: #1e90ff;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      min-height: 56px;
-  
-      &:hover {
-        background-color: darken(#1e90ff, 10%);
-        transform: translateY(-1px);
-      }
-    }
-  
-    .products-section {
-      max-height: 500px;
-      overflow-y: auto;
+
+  .packing-header {
+    cursor: pointer;
+    &:hover {
+      background: rgba(0,0,0,0.03);
     }
   }
-  
-  // Animación para el contenido expandible
-  .q-slide-transition-enter-active,
-  .q-slide-transition-leave-active {
-    transition: all 0.3s ease;
+
+  .add-product-card {
+    background-color: #1e90ff;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 56px;
+
+    &:hover {
+      background-color: darken(#1e90ff, 10%);
+      transform: translateY(-1px);
+    }
   }
-  
-  .q-slide-transition-enter-from,
-  .q-slide-transition-leave-to {
-    opacity: 0;
-    transform: translateY(-10px);
+
+  .products-section {
+    max-height: 500px;
+    overflow-y: auto;
   }
-  </style>
+}
+
+.q-slide-transition-enter-active,
+.q-slide-transition-leave-active {
+  transition: all 0.3s ease;
+}
+
+.q-slide-transition-enter-from,
+.q-slide-transition-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+</style>
