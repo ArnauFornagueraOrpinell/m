@@ -438,4 +438,72 @@ router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => 
     }
   });
 
+  router.get('/get-pickings-table', dbMiddleware, dbCloseMiddleware, (req, res) => {
+    let conn;
+    try {
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
+      console.log("Connected to: " +  CUSTOM_DATABASE);
+  
+      let query = `
+        SELECT * 
+        FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PICKING_NAME}
+      `;
+  
+      const data = conn.querySync(query);
+      console.log("Data in view:", data);
+  
+      res.status(200).json(data);
+    } catch (error) {
+      console.log("Error getting pickings:", error);
+      res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/get-packings-table', dbMiddleware, dbCloseMiddleware, (req, res) => {
+    let conn;
+    try {
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
+      console.log("Connected to: " +  CUSTOM_DATABASE);
+  
+      let query = `
+        SELECT * 
+        FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PACKING_NAME}
+      `;
+  
+      const data = conn.querySync(query);
+      console.log("Data in view:", data);
+  
+      res.status(200).json(data);
+    } catch (error) {
+      console.log("Error getting packings:", error);
+      res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/get-products-table', dbMiddleware, dbCloseMiddleware, (req, res) => {
+    let conn;
+    try {
+      console.log("Attempting to connect: " + customConnStr);
+      conn = ibmdb.openSync(customConnStr);
+      console.log("Connected to: " +  CUSTOM_DATABASE);
+  
+      let query = `
+        SELECT * 
+        FROM ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME}
+      `;
+  
+      const data = conn.querySync(query);
+      console.log("Data in view:", data);
+  
+      res.status(200).json(data);
+    } catch (error) {
+      console.log("Error getting products:", error);
+      res.status(500).json({ error: error.message });
+    }
+});
+
+
+
 module.exports = router;
