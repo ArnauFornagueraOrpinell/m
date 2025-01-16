@@ -273,17 +273,14 @@ export default {
   }
 }
 
-.product-header {
-  padding: 12px 16px;
-  transition: all 0.3s ease;
-}
-
 .product-card {
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .product-card.collapsed {
   background: transparent;
+  border: none;
 }
 
 .product-card.collapsed :deep(.q-card__section) {
@@ -293,6 +290,7 @@ export default {
 /* Ajuste para que solo se vea la barra azul cuando está colapsado */
 .collapsed .product-header {
   margin-bottom: -1px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 /* Estilo específico para el texto cuando está colapsado */
@@ -300,5 +298,10 @@ export default {
   font-size: 1rem;
   margin: 0;
   line-height: 1.2;
+}
+
+/* Estilos para el contenido expandido */
+.product-card:not(.collapsed) .product-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 </style>
