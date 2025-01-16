@@ -3,54 +3,76 @@
       :id="paletId" 
       class="palet-card q-ma-md"
       :class="{ 'selected': isSelected }"
-      @click="$emit('click')"
     >
-      <q-item>
-        <q-item-section>
-          <q-item-label class="text-h6">
-            {{ paletTitle }}
-          </q-item-label>
-        </q-item-section>
-      </q-item>
+      <!-- Header siempre visible -->
+      <div class="palet-header" @click="$emit('click')">
+        <q-item>
+          <q-item-section avatar>
+            <q-btn
+              flat
+              round
+              dense
+              :icon="isExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right'"
+              @click.stop="toggleExpand"
+            />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-h6">
+              {{ paletTitle }}
+            </q-item-label>
+            <q-item-label caption>
+              OF: {{ palet.of_group }}
+            </q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-chip color="primary" text-color="white" size="sm">
+              {{ palet.products.length }} productos
+            </q-chip>
+          </q-item-section>
+        </q-item>
+      </div>
   
-      <q-card-section class="q-pa-md">
-        <div class="text-subtitle2">OF: {{ palet.of_group }}</div>
-      </q-card-section>
+      <!-- Contenido expandible -->
+      <q-slide-transition>
+        <div v-show="isExpanded">
+          <q-separator />
+          <q-card-section class="products-section">
+            <q-list>
+              <q-item 
+                v-for="(product, index) in palet.products" 
+                :key="index"
+                @click.stop
+              >
+                <q-item-section>
+                  <ProductComponent
+                    :model-value="palet.products[index]"
+                    @update:model-value="$emit('update:product', { index, value: $event })"
+                    :id="getProductId(product)"
+                    :class="{ 'selected': selectedProducts.includes(product) }"
+                    @click.stop="$emit('product-click', product)"
+                  />
+                </q-item-section>
+              </q-item>
+            </q-list>
   
-      <q-card-section class="products-section">
-        <q-list>
-          <q-item 
-            v-for="(product, index) in palet.products" 
-            :key="index"
-            @click.stop
-          >
-            <q-item-section>
-              <ProductComponent
-                :model-value="palet.products[index]"
-                @update:model-value="$emit('update:product', { index, value: $event })"
-                :id="getProductId(product)"
-                :class="{ 'selected': selectedProducts.includes(product) }"
-                @click.stop="$emit('product-click', product)"
-              />
-            </q-item-section>
-          </q-item>
-        </q-list>
-  
-        <q-card 
-          v-if="isSelected"
-          class="add-product-card q-ma-sm"
-          @click.stop="$emit('add-product')"
-        >
-          <q-card-section class="row items-center justify-center">
-            <q-icon name="add" size="24px" color="white" />
-            <span class="text-white q-ml-sm">Añadir Producto</span>
+            <q-card 
+              v-if="isSelected"
+              class="add-product-card q-ma-sm"
+              @click.stop="$emit('add-product')"
+            >
+              <q-card-section class="row items-center justify-center">
+                <q-icon name="add" size="24px" color="white" />
+                <span class="text-white q-ml-sm">Añadir Producto</span>
+              </q-card-section>
+            </q-card>
           </q-card-section>
-        </q-card>
-      </q-card-section>
+        </div>
+      </q-slide-transition>
     </q-card>
   </template>
   
   <script>
+  import { ref } from 'vue'
   import ProductComponent from './ProductComponent.vue'
   
   export default {
@@ -76,6 +98,18 @@
         default: () => []
       }
     },
+    setup() {
+      const isExpanded = ref(false)
+  
+      const toggleExpand = () => {
+        isExpanded.value = !isExpanded.value
+      }
+  
+      return {
+        isExpanded,
+        toggleExpand
+      }
+    },
     computed: {
       paletId() {
         return `palet-${this.paletIndex}`
@@ -92,7 +126,7 @@
         return `#${product.NUM_DOCUMENT_OF}-${product.CODI_PRODUCTE}`
       }
     },
-    emits: ['click', 'product-click', 'add-product']
+    emits: ['click', 'product-click', 'add-product', 'update:product']
   }
   </script>
   
@@ -104,6 +138,13 @@
     &.selected {
       border: 2px solid var(--q-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  
+    .palet-header {
+      cursor: pointer;
+      &:hover {
+        background: rgba(0,0,0,0.03);
+      }
     }
   
     .add-product-card {
@@ -122,5 +163,17 @@
       max-height: 500px;
       overflow-y: auto;
     }
+  }
+  
+  // Animación para el contenido expandible
+  .q-slide-transition-enter-active,
+  .q-slide-transition-leave-active {
+    transition: all 0.3s ease;
+  }
+  
+  .q-slide-transition-enter-from,
+  .q-slide-transition-leave-to {
+    opacity: 0;
+    transform: translateY(-10px);
   }
   </style>
