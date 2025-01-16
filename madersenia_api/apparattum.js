@@ -21,7 +21,7 @@ const VIEW_NAME = process.env.VIEW_NAME;
 const NODE_PORT = process.env.NODE_PORT;
 const DB_PORT = process.env.DB_PORT;
 
-const schema_settings = `CREATE SCHEMA ${TAB_SCHEMA}`;
+const schema_settings = `CREATE SCHEMA ${CUSTOM_TAB_SCHEMA}`;
 
 const table1_settings = `
 CREATE TABLE ${CUSTOM_TAB_SCHEMA}.${TAB_PRODUCT_NAME} (
