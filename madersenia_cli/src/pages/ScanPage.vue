@@ -47,11 +47,7 @@
         @add-product="handleAddProduct"
       />
   
-      <!-- Mensaje sin pickings -->
-      <div v-if="palets.length === 0" class="text-center q-pa-lg">
-        <h3 class="text-h5 text-grey-7">No hay palets disponibles</h3>
-      </div>
-  
+
       <!-- Barra de acciones -->
       <action-bar
         :selected-products="selectedProducts"
