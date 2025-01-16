@@ -405,15 +405,16 @@ router.get('/delete-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => 
     const id = req.params.id;
     pickings = pickings.filter(picking => picking.id !== id);
     res.send('Picking deleted');
-  });
+});
   
-  router.post('/update-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => {
+router.post('/update-picking:id', dbMiddleware, dbCloseMiddleware, (req, res) => {
     const id = req.params.id;
     const new_picking = req.body;
     pickings = pickings.map(picking => (picking.id === id ? new_picking : picking));
     res.send('Picking updated');
-  });
-  router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
+});
+
+router.get('/get-pickings', dbMiddleware, dbCloseMiddleware, (req, res) => {
     let conn;
     try {
         console.log("Attempting to connect: " + customConnStr);
